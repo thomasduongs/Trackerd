@@ -14,6 +14,8 @@ void main() {
 
     expect(find.byType(Home), findsOneWidget);
     expect(find.text('Workout Tracker'), findsWidgets);
+    await tester.pumpAndSettle();
+    expect(find.text('0 Workouts'), findsOneWidget);
     await _disposeApp(tester);
   });
 
@@ -71,11 +73,13 @@ void main() {
     final now = DateTime(current.year, current.month, current.day, 12);
 
     await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
       exerciseName: 'Older Exercise',
       performedAt: now.subtract(const Duration(minutes: 10)),
       sets: const [ExerciseSetInput(reps: 8, weight: 20)],
     );
     await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
       exerciseName: 'Newest Exercise',
       performedAt: now,
       sets: const [
@@ -84,6 +88,7 @@ void main() {
       ],
     );
     await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
       exerciseName: 'Yesterday Exercise',
       performedAt: now.subtract(const Duration(days: 1)),
       sets: const [ExerciseSetInput(reps: 12, weight: 15)],
@@ -101,6 +106,8 @@ void main() {
       find.text('2 sets  •  Reps at max: 8  •  Max weight: 30'),
       findsOneWidget,
     );
+    expect(find.text('2 Exercises'), findsOneWidget);
+    expect(find.text('3 Sets'), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('Newest Exercise')).dy,
       lessThan(tester.getTopLeft(find.text('Older Exercise')).dy),
@@ -123,6 +130,100 @@ void main() {
 
     expect(find.byType(SessionInput), findsOneWidget);
     expect(await database.customExerciseNames('Biceps'), ['Preacher Curl']);
+    await _disposeApp(tester);
+  });
+
+  testWidgets('stats show all-time and latest-session heaviest sets', (
+    tester,
+  ) async {
+    final database = await _pumpApp(tester);
+    final current = DateTime.now();
+
+    await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
+      exerciseName: 'Barbell Curl',
+      performedAt: current.subtract(const Duration(days: 7)),
+      sets: const [ExerciseSetInput(reps: 6, weight: 50)],
+    );
+    await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
+      exerciseName: 'Barbell Curl',
+      performedAt: current,
+      sets: const [
+        ExerciseSetInput(reps: 10, weight: 40),
+        ExerciseSetInput(reps: 8, weight: 45),
+      ],
+    );
+
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Barbell Curl'), findsOneWidget);
+    expect(find.textContaining('All-time: 6 reps × 50'), findsOneWidget);
+    expect(find.textContaining('Recent: 8 reps × 45'), findsOneWidget);
+    await _disposeApp(tester);
+  });
+
+  testWidgets('recent sessions summarize the latest five logged days', (
+    tester,
+  ) async {
+    final database = await _pumpApp(tester);
+    final current = DateTime.now();
+    final today = DateTime(current.year, current.month, current.day, 12);
+
+    for (var dayOffset = 0; dayOffset < 6; dayOffset++) {
+      await database.saveExerciseSets(
+        muscleGroup: dayOffset == 5 ? 'Misc.' : 'Biceps',
+        exerciseName: 'Curl $dayOffset',
+        performedAt: today.subtract(Duration(days: dayOffset)),
+        sets: const [
+          ExerciseSetInput(reps: 10, weight: 20),
+          ExerciseSetInput(reps: 8, weight: 25),
+        ],
+      );
+    }
+    await database.saveExerciseSets(
+      muscleGroup: 'Chest',
+      exerciseName: 'Bench Press',
+      performedAt: today,
+      sets: const [ExerciseSetInput(reps: 6, weight: 40)],
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Biceps • Chest'), findsOneWidget);
+    expect(find.text('2 exercises\n3 sets'), findsOneWidget);
+    expect(find.text('Misc.'), findsNothing);
+    expect(find.text('6 Workouts'), findsOneWidget);
+    await _disposeApp(tester);
+  });
+
+  testWidgets('tapping a recent session opens that session day', (
+    tester,
+  ) async {
+    final database = await _pumpApp(tester);
+    final sessionDay = DateTime(2026, 9, 6, 12);
+
+    await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
+      exerciseName: 'Past Curl',
+      performedAt: sessionDay,
+      sets: const [ExerciseSetInput(reps: 10, weight: 20)],
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.ancestor(
+        of: find.text('9/6/2026').first,
+        matching: find.byType(ListTile),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SessionInput), findsOneWidget);
+    expect(find.text('Sep 6, 2026'), findsWidgets);
+    expect(find.text('Past Curl'), findsOneWidget);
     await _disposeApp(tester);
   });
 }

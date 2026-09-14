@@ -5,9 +5,14 @@ import 'package:trackerd_app/app/theme.dart';
 import 'package:trackerd_app/data/database/app_database.dart';
 
 class SessionExercise extends StatefulWidget {
-  const SessionExercise({super.key, required this.muscleGroup});
+  const SessionExercise({
+    super.key,
+    required this.muscleGroup,
+    required this.performedAt,
+  });
 
   final String muscleGroup;
+  final DateTime performedAt;
 
   @override
   State<SessionExercise> createState() => _SessionExerciseState();
@@ -226,8 +231,9 @@ class _SessionExerciseState extends State<SessionExercise> {
     setState(() => _isSubmitting = true);
     try {
       await AppDatabaseScope.of(context).saveExerciseSets(
+        muscleGroup: widget.muscleGroup,
         exerciseName: _exercises[_selectedExercise],
-        performedAt: DateTime.now(),
+        performedAt: widget.performedAt,
         sets: completedSets,
       );
       if (mounted) Navigator.of(context).pop();

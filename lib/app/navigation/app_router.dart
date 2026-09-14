@@ -20,13 +20,24 @@ abstract final class AppRouter {
       ),
       AppRoutes.sessionInput => _pageRoute(
         settings: settings,
-        builder: (_) => const SessionInput(),
+        builder: (_) =>
+            SessionInput(sessionDate: settings.arguments as DateTime?),
       ),
       AppRoutes.sessionExercise => _pageRoute(
         settings: settings,
-        builder: (_) => SessionExercise(
-          muscleGroup: settings.arguments as String? ?? 'Misc.',
-        ),
+        builder: (_) {
+          final args = settings.arguments;
+          if (args is SessionExerciseRouteArgs) {
+            return SessionExercise(
+              muscleGroup: args.muscleGroup,
+              performedAt: args.performedAt,
+            );
+          }
+          return SessionExercise(
+            muscleGroup: args as String? ?? 'Misc.',
+            performedAt: DateTime.now(),
+          );
+        },
       ),
       AppRoutes.newExercise => _slideDownRoute(
         settings: settings,
@@ -64,6 +75,16 @@ abstract final class AppRouter {
       },
     );
   }
+}
+
+class SessionExerciseRouteArgs {
+  const SessionExerciseRouteArgs({
+    required this.muscleGroup,
+    required this.performedAt,
+  });
+
+  final String muscleGroup;
+  final DateTime performedAt;
 }
 
 class _UnknownRoutePage extends StatelessWidget {

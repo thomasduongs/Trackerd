@@ -5,6 +5,7 @@ part 'app_database.g.dart';
 
 class ExerciseEntries extends Table {
   TextColumn get id => text()();
+  TextColumn get muscleGroup => text().withDefault(const Constant('Misc.'))();
   TextColumn get exerciseName => text().withLength(min: 1, max: 120)();
   DateTimeColumn get performedAt => dateTime()();
   IntColumn get reps => integer().check(reps.isBetweenValues(0, 20))();
@@ -33,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -47,6 +48,9 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
         await migrator.createTable(customExercises);
+      }
+      if (from < 3) {
+        await migrator.addColumn(exerciseEntries, exerciseEntries.muscleGroup);
       }
     },
   );
@@ -77,6 +81,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> saveExerciseSets({
+    required String muscleGroup,
     required String exerciseName,
     required DateTime performedAt,
     required List<ExerciseSetInput> sets,
@@ -93,6 +98,7 @@ class AppDatabase extends _$AppDatabase {
         for (final indexedSet in sets.indexed)
           ExerciseEntriesCompanion.insert(
             id: '$normalizedName-$date-$submissionId-${indexedSet.$1 + 1}',
+              muscleGroup: Value(muscleGroup),
             exerciseName: exerciseName.trim(),
             performedAt: performedAt,
             reps: indexedSet.$2.reps,

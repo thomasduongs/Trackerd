@@ -18,6 +18,18 @@ class $ExerciseEntriesTable extends ExerciseEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _muscleGroupMeta = const VerificationMeta(
+    'muscleGroup',
+  );
+  @override
+  late final GeneratedColumn<String> muscleGroup = GeneratedColumn<String>(
+    'muscle_group',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Misc.'),
+  );
   static const VerificationMeta _exerciseNameMeta = const VerificationMeta(
     'exerciseName',
   );
@@ -69,6 +81,7 @@ class $ExerciseEntriesTable extends ExerciseEntries
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    muscleGroup,
     exerciseName,
     performedAt,
     reps,
@@ -90,6 +103,15 @@ class $ExerciseEntriesTable extends ExerciseEntries
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('muscle_group')) {
+      context.handle(
+        _muscleGroupMeta,
+        muscleGroup.isAcceptableOrUnknown(
+          data['muscle_group']!,
+          _muscleGroupMeta,
+        ),
+      );
     }
     if (data.containsKey('exercise_name')) {
       context.handle(
@@ -145,6 +167,10 @@ class $ExerciseEntriesTable extends ExerciseEntries
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      muscleGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}muscle_group'],
+      )!,
       exerciseName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}exercise_name'],
@@ -172,12 +198,14 @@ class $ExerciseEntriesTable extends ExerciseEntries
 
 class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
   final String id;
+  final String muscleGroup;
   final String exerciseName;
   final DateTime performedAt;
   final int reps;
   final int weightTimesTen;
   const ExerciseEntry({
     required this.id,
+    required this.muscleGroup,
     required this.exerciseName,
     required this.performedAt,
     required this.reps,
@@ -187,6 +215,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['muscle_group'] = Variable<String>(muscleGroup);
     map['exercise_name'] = Variable<String>(exerciseName);
     map['performed_at'] = Variable<DateTime>(performedAt);
     map['reps'] = Variable<int>(reps);
@@ -197,6 +226,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
   ExerciseEntriesCompanion toCompanion(bool nullToAbsent) {
     return ExerciseEntriesCompanion(
       id: Value(id),
+      muscleGroup: Value(muscleGroup),
       exerciseName: Value(exerciseName),
       performedAt: Value(performedAt),
       reps: Value(reps),
@@ -211,6 +241,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ExerciseEntry(
       id: serializer.fromJson<String>(json['id']),
+      muscleGroup: serializer.fromJson<String>(json['muscleGroup']),
       exerciseName: serializer.fromJson<String>(json['exerciseName']),
       performedAt: serializer.fromJson<DateTime>(json['performedAt']),
       reps: serializer.fromJson<int>(json['reps']),
@@ -222,6 +253,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'muscleGroup': serializer.toJson<String>(muscleGroup),
       'exerciseName': serializer.toJson<String>(exerciseName),
       'performedAt': serializer.toJson<DateTime>(performedAt),
       'reps': serializer.toJson<int>(reps),
@@ -231,12 +263,14 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
 
   ExerciseEntry copyWith({
     String? id,
+    String? muscleGroup,
     String? exerciseName,
     DateTime? performedAt,
     int? reps,
     int? weightTimesTen,
   }) => ExerciseEntry(
     id: id ?? this.id,
+    muscleGroup: muscleGroup ?? this.muscleGroup,
     exerciseName: exerciseName ?? this.exerciseName,
     performedAt: performedAt ?? this.performedAt,
     reps: reps ?? this.reps,
@@ -245,6 +279,9 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
   ExerciseEntry copyWithCompanion(ExerciseEntriesCompanion data) {
     return ExerciseEntry(
       id: data.id.present ? data.id.value : this.id,
+      muscleGroup: data.muscleGroup.present
+          ? data.muscleGroup.value
+          : this.muscleGroup,
       exerciseName: data.exerciseName.present
           ? data.exerciseName.value
           : this.exerciseName,
@@ -262,6 +299,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
   String toString() {
     return (StringBuffer('ExerciseEntry(')
           ..write('id: $id, ')
+          ..write('muscleGroup: $muscleGroup, ')
           ..write('exerciseName: $exerciseName, ')
           ..write('performedAt: $performedAt, ')
           ..write('reps: $reps, ')
@@ -271,13 +309,20 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, exerciseName, performedAt, reps, weightTimesTen);
+  int get hashCode => Object.hash(
+    id,
+    muscleGroup,
+    exerciseName,
+    performedAt,
+    reps,
+    weightTimesTen,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ExerciseEntry &&
           other.id == this.id &&
+          other.muscleGroup == this.muscleGroup &&
           other.exerciseName == this.exerciseName &&
           other.performedAt == this.performedAt &&
           other.reps == this.reps &&
@@ -286,6 +331,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
 
 class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   final Value<String> id;
+  final Value<String> muscleGroup;
   final Value<String> exerciseName;
   final Value<DateTime> performedAt;
   final Value<int> reps;
@@ -293,6 +339,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   final Value<int> rowid;
   const ExerciseEntriesCompanion({
     this.id = const Value.absent(),
+    this.muscleGroup = const Value.absent(),
     this.exerciseName = const Value.absent(),
     this.performedAt = const Value.absent(),
     this.reps = const Value.absent(),
@@ -301,6 +348,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   });
   ExerciseEntriesCompanion.insert({
     required String id,
+    this.muscleGroup = const Value.absent(),
     required String exerciseName,
     required DateTime performedAt,
     required int reps,
@@ -313,6 +361,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
        weightTimesTen = Value(weightTimesTen);
   static Insertable<ExerciseEntry> custom({
     Expression<String>? id,
+    Expression<String>? muscleGroup,
     Expression<String>? exerciseName,
     Expression<DateTime>? performedAt,
     Expression<int>? reps,
@@ -321,6 +370,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (muscleGroup != null) 'muscle_group': muscleGroup,
       if (exerciseName != null) 'exercise_name': exerciseName,
       if (performedAt != null) 'performed_at': performedAt,
       if (reps != null) 'reps': reps,
@@ -331,6 +381,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
 
   ExerciseEntriesCompanion copyWith({
     Value<String>? id,
+    Value<String>? muscleGroup,
     Value<String>? exerciseName,
     Value<DateTime>? performedAt,
     Value<int>? reps,
@@ -339,6 +390,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   }) {
     return ExerciseEntriesCompanion(
       id: id ?? this.id,
+      muscleGroup: muscleGroup ?? this.muscleGroup,
       exerciseName: exerciseName ?? this.exerciseName,
       performedAt: performedAt ?? this.performedAt,
       reps: reps ?? this.reps,
@@ -352,6 +404,9 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (muscleGroup.present) {
+      map['muscle_group'] = Variable<String>(muscleGroup.value);
     }
     if (exerciseName.present) {
       map['exercise_name'] = Variable<String>(exerciseName.value);
@@ -375,6 +430,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   String toString() {
     return (StringBuffer('ExerciseEntriesCompanion(')
           ..write('id: $id, ')
+          ..write('muscleGroup: $muscleGroup, ')
           ..write('exerciseName: $exerciseName, ')
           ..write('performedAt: $performedAt, ')
           ..write('reps: $reps, ')
@@ -734,6 +790,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$ExerciseEntriesTableCreateCompanionBuilder =
     ExerciseEntriesCompanion Function({
       required String id,
+      Value<String> muscleGroup,
       required String exerciseName,
       required DateTime performedAt,
       required int reps,
@@ -743,6 +800,7 @@ typedef $$ExerciseEntriesTableCreateCompanionBuilder =
 typedef $$ExerciseEntriesTableUpdateCompanionBuilder =
     ExerciseEntriesCompanion Function({
       Value<String> id,
+      Value<String> muscleGroup,
       Value<String> exerciseName,
       Value<DateTime> performedAt,
       Value<int> reps,
@@ -761,6 +819,11 @@ class $$ExerciseEntriesTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -799,6 +862,11 @@ class $$ExerciseEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get exerciseName => $composableBuilder(
     column: $table.exerciseName,
     builder: (column) => ColumnOrderings(column),
@@ -831,6 +899,11 @@ class $$ExerciseEntriesTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get muscleGroup => $composableBuilder(
+    column: $table.muscleGroup,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get exerciseName => $composableBuilder(
     column: $table.exerciseName,
@@ -885,6 +958,7 @@ class $$ExerciseEntriesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> muscleGroup = const Value.absent(),
                 Value<String> exerciseName = const Value.absent(),
                 Value<DateTime> performedAt = const Value.absent(),
                 Value<int> reps = const Value.absent(),
@@ -892,6 +966,7 @@ class $$ExerciseEntriesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseEntriesCompanion(
                 id: id,
+                muscleGroup: muscleGroup,
                 exerciseName: exerciseName,
                 performedAt: performedAt,
                 reps: reps,
@@ -901,6 +976,7 @@ class $$ExerciseEntriesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String> muscleGroup = const Value.absent(),
                 required String exerciseName,
                 required DateTime performedAt,
                 required int reps,
@@ -908,6 +984,7 @@ class $$ExerciseEntriesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseEntriesCompanion.insert(
                 id: id,
+                muscleGroup: muscleGroup,
                 exerciseName: exerciseName,
                 performedAt: performedAt,
                 reps: reps,

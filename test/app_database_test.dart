@@ -15,6 +15,7 @@ void main() {
     final performedAt = DateTime(2026, 9, 13, 8, 30);
 
     await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
       exerciseName: 'Barbell Curl',
       performedAt: performedAt,
       sets: const [
@@ -39,6 +40,7 @@ void main() {
   test('deletes every set belonging to one exercise submission', () async {
     final performedAt = DateTime(2026, 9, 13, 8, 30);
     await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
       exerciseName: 'Barbell Curl',
       performedAt: performedAt,
       sets: const [

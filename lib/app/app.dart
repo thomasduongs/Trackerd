@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:trackerd_app/app/app_database_scope.dart';
 import 'package:trackerd_app/app/navigation/app_router.dart';
+import 'package:trackerd_app/data/database/app_database.dart';
 import 'theme.dart';
 
 class Home extends StatefulWidget {
@@ -102,31 +104,51 @@ class _HomeState extends State<Home> {
             sliver: SliverToBoxAdapter(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Container(
+                child: ColoredBox(
                   color: AppColors.surface,
-                  child: Column(
-                    children: List.generate(5, (index) {
-                      return Column(
-                        children: [
-                          ListTile(
-                            title: Text('$index'),
-                            subtitle: Text('data'),
-                            subtitleTextStyle: TextStyle(
-                              color: AppColors.mutedText,
+                  child: StreamBuilder<List<ExerciseEntry>>(
+                    stream: AppDatabaseScope.of(context).watchAllExercises(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+
+                      final sessions = _recentSessions(snapshot.data!);
+                      if (sessions.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: Text(
+                              'No sessions recorded yet.',
+                              style: TextStyle(color: AppColors.mutedText),
                             ),
-                            tileColor: Colors.transparent,
-                            onTap: () => null,
                           ),
-                          Divider(
-                            height: 0.8,
-                            color: index == 4
-                                ? Colors.transparent
-                                : AppColors.search,
-                            endIndent: 56,
+                        );
+                      }
+
+                      return ListView.separated(
+                        primary: false,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: sessions.length,
+                        separatorBuilder: (_, __) => const Divider(
+                          height: 1,
+                          indent: 16,
+                          endIndent: 16,
+                          color: AppColors.search,
+                        ),
+                        itemBuilder: (context, index) => _RecentSessionTile(
+                          session: sessions[index],
+                          onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.sessionInput,
+                            arguments: sessions[index].date,
                           ),
-                        ],
+                        ),
                       );
-                    }),
+                    },
                   ),
                 ),
               ),
@@ -143,19 +165,46 @@ class _HomeState extends State<Home> {
             sliver: SliverToBoxAdapter(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Container(
+                child: ColoredBox(
                   color: AppColors.surface,
-                  child: Column(
-                    children: [
-                      ListView.builder(
+                  child: StreamBuilder<List<ExerciseEntry>>(
+                    stream: AppDatabaseScope.of(context).watchAllExercises(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+
+                      final stats = _exerciseStats(snapshot.data!);
+                      if (stats.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: Text(
+                              'No exercise history yet.',
+                              style: TextStyle(color: AppColors.mutedText),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
                         primary: false,
                         shrinkWrap: true,
-                        itemCount: 10,
-                        itemBuilder: (context, index) {
-                          return Container(height: 50, child: Text('data'));
-                        },
-                      ),
-                    ],
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: stats.length,
+                        separatorBuilder: (_, __) => const Divider(
+                          height: 1,
+                          indent: 16,
+                          endIndent: 16,
+                          color: AppColors.search,
+                        ),
+                        itemBuilder: (context, index) =>
+                            _ExerciseStatTile(stat: stats[index]),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -177,18 +226,250 @@ class _HomeState extends State<Home> {
           ),
           child: BottomAppBar(
             color: AppColors.bar,
-            child: Column(
-              children: [
-                Text('Workouts'),
-                Text(
-                  '${months[DateTime.now().month - 1]} ${DateTime.now().day}, ${DateTime.now().year}',
-                  style: TextStyle(color: AppColors.mutedText),
-                ),
-              ],
+            child: StreamBuilder<List<ExerciseEntry>>(
+              stream: AppDatabaseScope.of(context).watchAllExercises(),
+              builder: (context, snapshot) {
+                final workoutDays = snapshot.hasData
+                    ? _loggedWorkoutDays(snapshot.data!)
+                    : 0;
+                final workoutLabel = workoutDays == 1 ? 'Workout' : 'Workouts';
+
+                return Column(
+                  children: [
+                    Text('$workoutDays $workoutLabel'),
+                    Text(
+                      '${months[DateTime.now().month - 1]} ${DateTime.now().day}, ${DateTime.now().year}',
+                      style: TextStyle(color: AppColors.mutedText),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+const _muscleGroupOrder = [
+  'Biceps',
+  'Triceps',
+  'Shoulders',
+  'Chest',
+  'Back',
+  'Quads',
+  'Hamstrings',
+  'Misc.',
+];
+
+List<_SessionDaySummary> _recentSessions(List<ExerciseEntry> entries) {
+  final sessionsByDay = <DateTime, List<ExerciseEntry>>{};
+  for (final entry in entries) {
+    final day = DateTime(
+      entry.performedAt.year,
+      entry.performedAt.month,
+      entry.performedAt.day,
+    );
+    sessionsByDay.putIfAbsent(day, () => []).add(entry);
+  }
+
+  final summaries = sessionsByDay.entries.map((entry) {
+    final bodyParts = entry.value.map((set) => set.muscleGroup).toSet().toList()
+      ..sort((left, right) => _groupRank(left).compareTo(_groupRank(right)));
+    final exercises = entry.value
+        .map(
+          (set) =>
+              '${set.muscleGroup}\u0000${set.exerciseName}\u0000${set.performedAt.microsecondsSinceEpoch}',
+        )
+        .toSet();
+
+    return _SessionDaySummary(
+      date: entry.key,
+      bodyParts: bodyParts,
+      exerciseCount: exercises.length,
+      setCount: entry.value.where((set) => set.reps > 0).length,
+    );
+  }).toList()..sort((left, right) => right.date.compareTo(left.date));
+
+  return summaries.take(5).toList();
+}
+
+int _loggedWorkoutDays(List<ExerciseEntry> entries) {
+  return {
+    for (final entry in entries)
+      if (entry.reps > 0)
+        DateTime(
+          entry.performedAt.year,
+          entry.performedAt.month,
+          entry.performedAt.day,
+        ),
+  }.length;
+}
+
+List<_ExerciseStat> _exerciseStats(List<ExerciseEntry> entries) {
+  final grouped = <String, List<ExerciseEntry>>{};
+  for (final entry in entries) {
+    grouped
+        .putIfAbsent(
+          '${entry.muscleGroup}\u0000${entry.exerciseName}',
+          () => [],
+        )
+        .add(entry);
+  }
+
+  final stats = grouped.values.map((sets) {
+    final latestTime = sets
+        .map((set) => set.performedAt)
+        .reduce((latest, date) => date.isAfter(latest) ? date : latest);
+    final latestSessionSets = sets
+        .where((set) => set.performedAt == latestTime)
+        .toList();
+    final allTimeBest = _heaviestSet(sets);
+    final recentBest = _heaviestSet(latestSessionSets);
+
+    return _ExerciseStat(
+      muscleGroup: sets.first.muscleGroup,
+      exerciseName: sets.first.exerciseName,
+      allTimeBest: allTimeBest,
+      recentBest: recentBest,
+    );
+  }).toList();
+
+  stats.sort((left, right) {
+    final groupDifference = _groupRank(
+      left.muscleGroup,
+    ).compareTo(_groupRank(right.muscleGroup));
+    if (groupDifference != 0) return groupDifference;
+    return left.exerciseName.toLowerCase().compareTo(
+      right.exerciseName.toLowerCase(),
+    );
+  });
+  return stats;
+}
+
+ExerciseEntry _heaviestSet(List<ExerciseEntry> sets) {
+  return sets.reduce(
+    (heaviest, set) =>
+        set.weightTimesTen > heaviest.weightTimesTen ? set : heaviest,
+  );
+}
+
+int _groupRank(String muscleGroup) {
+  final index = _muscleGroupOrder.indexOf(muscleGroup);
+  return index == -1 ? _muscleGroupOrder.length : index;
+}
+
+class _ExerciseStat {
+  const _ExerciseStat({
+    required this.muscleGroup,
+    required this.exerciseName,
+    required this.allTimeBest,
+    required this.recentBest,
+  });
+
+  final String muscleGroup;
+  final String exerciseName;
+  final ExerciseEntry allTimeBest;
+  final ExerciseEntry recentBest;
+}
+
+class _SessionDaySummary {
+  const _SessionDaySummary({
+    required this.date,
+    required this.bodyParts,
+    required this.exerciseCount,
+    required this.setCount,
+  });
+
+  final DateTime date;
+  final List<String> bodyParts;
+  final int exerciseCount;
+  final int setCount;
+}
+
+class _RecentSessionTile extends StatelessWidget {
+  const _RecentSessionTile({required this.session, required this.onTap});
+
+  final _SessionDaySummary session;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final exerciseLabel = session.exerciseCount == 1 ? 'exercise' : 'exercises';
+    final setLabel = session.setCount == 1 ? 'set' : 'sets';
+
+    return ListTile(
+      onTap: onTap,
+      title: Text(_formatDate(session.date)),
+      subtitle: Text(session.bodyParts.join(' • ')),
+      trailing: Text(
+        '${session.exerciseCount} $exerciseLabel\n${session.setCount} $setLabel',
+        textAlign: TextAlign.right,
+        style: const TextStyle(color: AppColors.mutedText),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+}
+
+class _ExerciseStatTile extends StatelessWidget {
+  const _ExerciseStatTile({required this.stat});
+
+  final _ExerciseStat stat;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(stat.exerciseName),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(stat.muscleGroup),
+          const SizedBox(height: 3),
+          _StatMetricRow(
+            label: 'All-time: ${_setLabel(stat.allTimeBest)}',
+            date: _formatDate(stat.allTimeBest.performedAt),
+          ),
+          _StatMetricRow(
+            label: 'Recent: ${_setLabel(stat.recentBest)}',
+            date: _formatDate(stat.recentBest.performedAt),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _setLabel(ExerciseEntry set) {
+    final weight = set.weightTimesTen / 10;
+    final formattedWeight = weight == weight.roundToDouble()
+        ? weight.toStringAsFixed(0)
+        : weight.toStringAsFixed(1);
+    return '${set.reps} x $formattedWeight lbs';
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+}
+
+class _StatMetricRow extends StatelessWidget {
+  const _StatMetricRow({required this.label, required this.date});
+
+  final String label;
+  final String date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Text(label)),
+        const SizedBox(width: 8),
+        Text(date, style: const TextStyle(color: AppColors.mutedText)),
+      ],
     );
   }
 }

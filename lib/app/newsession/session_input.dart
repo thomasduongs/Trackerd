@@ -6,7 +6,10 @@ import 'package:trackerd_app/data/database/app_database.dart';
 import '../theme.dart';
 
 class SessionInput extends StatefulWidget {
-  const SessionInput({super.key});
+  SessionInput({super.key, DateTime? sessionDate})
+    : sessionDate = sessionDate ?? DateTime.now();
+
+  final DateTime sessionDate;
   @override
   State<SessionInput> createState() => _SessionInputState();
 }
@@ -87,7 +90,7 @@ class _SessionInputState extends State<SessionInput> {
               curve: Curves.easeOut,
               opacity: _scrolled ? 1.0 : 0.0,
               child: Text(
-                '${months[DateTime.now().month - 1]} ${DateTime.now().day}, ${DateTime.now().year}',
+                _formattedSessionDate,
                 style: TextStyle(fontSize: 16),
               ),
             ),
@@ -137,7 +140,10 @@ class _SessionInputState extends State<SessionInput> {
                                       onTap: () =>
                                           Navigator.of(context).pushNamed(
                                             AppRoutes.sessionExercise,
-                                            arguments: muscleGroup.name,
+                                            arguments: SessionExerciseRouteArgs(
+                                              muscleGroup: muscleGroup.name,
+                                              performedAt: widget.sessionDate,
+                                            ),
                                           ),
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -215,7 +221,7 @@ class _SessionInputState extends State<SessionInput> {
             child: Padding(
               padding: EdgeInsets.fromLTRB(30, 5, 15, 15),
               child: Text(
-                '${months[DateTime.now().month - 1]} ${DateTime.now().day}, ${DateTime.now().year}',
+                _formattedSessionDate,
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
             ),
@@ -295,14 +301,27 @@ class _SessionInputState extends State<SessionInput> {
           ),
           child: BottomAppBar(
             color: AppColors.bar,
-            child: Column(
-              children: [
-                Text('_ Exercises'),
-                Text(
-                  '_ Exercises',
-                  style: TextStyle(color: AppColors.mutedText),
-                ),
-              ],
+            child: StreamBuilder<List<ExerciseEntry>>(
+              stream: _todayExercises(context),
+              builder: (context, snapshot) {
+                final entries = snapshot.data ?? const <ExerciseEntry>[];
+                final exercises = _groupExerciseSets(entries);
+                final setCount = entries.where((entry) => entry.reps > 0).length;
+                final exerciseLabel = exercises.length == 1
+                    ? 'Exercise'
+                    : 'Exercises';
+                final setLabel = setCount == 1 ? 'Set' : 'Sets';
+
+                return Column(
+                  children: [
+                    Text('${exercises.length} $exerciseLabel'),
+                    Text(
+                      '$setCount $setLabel',
+                      style: const TextStyle(color: AppColors.mutedText),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -311,8 +330,11 @@ class _SessionInputState extends State<SessionInput> {
   }
 
   Stream<List<ExerciseEntry>> _todayExercises(BuildContext context) {
-    final now = DateTime.now();
-    final day = DateTime(now.year, now.month, now.day);
+    final day = DateTime(
+      widget.sessionDate.year,
+      widget.sessionDate.month,
+      widget.sessionDate.day,
+    );
     if (_todayDate != day) {
       _todayDate = day;
       _todayExerciseEntries = AppDatabaseScope.of(
@@ -320,6 +342,10 @@ class _SessionInputState extends State<SessionInput> {
       ).watchExercisesForDate(day);
     }
     return _todayExerciseEntries!;
+  }
+
+  String get _formattedSessionDate {
+    return '${months[widget.sessionDate.month - 1]} ${widget.sessionDate.day}, ${widget.sessionDate.year}';
   }
 }
 
@@ -380,8 +406,8 @@ class _ExerciseListTile extends StatelessWidget {
           title: Text(exercise.name),
           subtitle: Text(
             '${completedSets.length} $setLabel  •  '
-            'Reps at max: ${heaviestSet?.reps ?? 0}  •  '
-            'Max weight: ${_formatWeight((heaviestSet?.weightTimesTen ?? 0) / 10)}',
+            'Reps at max: ${heaviestSet?.reps ?? 0} \n'
+            'Max weight: ${_formatWeight((heaviestSet?.weightTimesTen ?? 0) / 10)} lbs',
           ),
         ),
         Positioned(
