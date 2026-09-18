@@ -90,87 +90,99 @@ class _SessionExerciseState extends State<SessionExercise> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 50,
+        backgroundColor: AppColors.background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          tooltip: 'Back to muscle groups',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_sharp,
+            color: AppColors.primary,
+          ),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Submit exercise',
+            onPressed: _isSubmitting ? null : _submitExercise,
+            icon: const Icon(Icons.check, size: 30, color: AppColors.primary),
+          ),
+        ],
+      ),
       body: SafeArea(
+        top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: Column(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  IconButton(
-                    tooltip: 'Back to muscle groups',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: CupertinoPicker(
-                        itemExtent: 40,
-                        diameterRatio: 1.4,
-                        squeeze: 1,
-                        useMagnifier: true,
-                        magnification: 1.05,
-                        onSelectedItemChanged: (index) {
-                          setState(() => _selectedExercise = index);
-                        },
-                        children: _exercises
-                            .map(
-                              (exercise) => Center(
-                                child: Text(
-                                  exercise,
-                                  style: const TextStyle(fontSize: 17),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    tooltip: 'Submit exercise',
-                    onPressed: _isSubmitting ? null : _submitExercise,
-                    icon: const Icon(
-                      Icons.check,
-                      size: 30,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
+              Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: CupertinoPicker(
+                  itemExtent: 40,
+                  diameterRatio: 1.4,
+                  squeeze: 1,
+                  useMagnifier: true,
+                  magnification: 1.05,
+                  onSelectedItemChanged: (index) {
+                    setState(() => _selectedExercise = index);
+                  },
+                  children: _exercises
+                      .map(
+                        (exercise) => Center(
+                          child: Text(
+                            exercise,
+                            style: const TextStyle(fontSize: 17),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
               const SizedBox(height: 40),
-              const Padding(
-                padding: EdgeInsets.only(left: 48),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: Text('Reps', style: TextStyle(fontSize: 16)),
+              const Row(
+                children: [
+                  SizedBox(width: 48),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                'Reps',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 1),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                'Weight',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Expanded(
-                      child: Center(
-                        child: Text('Weight', style: TextStyle(fontSize: 16)),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: 36),
+                ],
               ),
               const SizedBox(height: 8),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    const maximumRowsHeight = (100.0 * 4) + (10.0 * 3);
+                    const maximumRowsHeight = (90.0 * 4) + (8.0 * 3);
                     final rowsHeight = constraints.maxHeight < maximumRowsHeight
                         ? constraints.maxHeight
                         : maximumRowsHeight;
@@ -184,7 +196,7 @@ class _SessionExerciseState extends State<SessionExercise> {
                             return Expanded(
                               child: Padding(
                                 padding: EdgeInsets.only(
-                                  bottom: index == 3 ? 0 : 10,
+                                  bottom: index == 3 ? 0 : 8,
                                 ),
                                 child: _SetRow(
                                   number: index + 1,
@@ -305,38 +317,45 @@ class _SetRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 48,
-          child: Text('$number:', style: const TextStyle(fontSize: 23)),
+          child: Text(
+            '$number:',
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 23),
+          ),
         ),
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _NumberPicker(
-                    controller: repsController,
-                    itemCount: 21,
-                    labelBuilder: (index) => '$index',
-                    onChanged: (index) => onRepsChanged(index),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _NumberPicker(
+                      controller: repsController,
+                      itemCount: 21,
+                      labelBuilder: (index) => '$index',
+                      onChanged: (index) => onRepsChanged(index),
+                    ),
                   ),
-                ),
-                const VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: AppColors.search,
-                ),
-                Expanded(
-                  child: _NumberPicker(
-                    controller: weightController,
-                    itemCount: 201,
-                    labelBuilder: (index) => _formatWeight(index * 2.5),
-                    onChanged: (index) => onWeightChanged(index * 2.5),
+                  const VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: AppColors.search,
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: _NumberPicker(
+                      controller: weightController,
+                      itemCount: 201,
+                      labelBuilder: (index) => _formatWeight(index * 2.5),
+                      onChanged: (index) => onWeightChanged(index * 2.5),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

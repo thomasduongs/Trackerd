@@ -96,7 +96,10 @@ class _HomeState extends State<Home> {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.all(15),
-              child: Text('Recent Sessions', style: TextStyle(fontSize: 24)),
+              child: Text(
+                'Recent Sessions',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           SliverPadding(
@@ -157,7 +160,10 @@ class _HomeState extends State<Home> {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.all(15),
-              child: Text('Stats', style: TextStyle(fontSize: 24)),
+              child: Text(
+                'Stats',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
           SliverPadding(
@@ -212,38 +218,42 @@ class _HomeState extends State<Home> {
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          height: 80,
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: AppColors.search, // your border color
-                width: 0.8,
+      bottomNavigationBar: Container(
+        color: AppColors.bar,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            height: 64,
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: AppColors.search, width: 0.8),
               ),
             ),
-          ),
-          child: BottomAppBar(
-            color: AppColors.bar,
-            child: StreamBuilder<List<ExerciseEntry>>(
-              stream: AppDatabaseScope.of(context).watchAllExercises(),
-              builder: (context, snapshot) {
-                final workoutDays = snapshot.hasData
-                    ? _loggedWorkoutDays(snapshot.data!)
-                    : 0;
-                final workoutLabel = workoutDays == 1 ? 'Workout' : 'Workouts';
+            child: BottomAppBar(
+              color: AppColors.bar,
+              padding: EdgeInsets.zero,
+              child: StreamBuilder<List<ExerciseEntry>>(
+                stream: AppDatabaseScope.of(context).watchAllExercises(),
+                builder: (context, snapshot) {
+                  final workoutDays = snapshot.hasData
+                      ? _loggedWorkoutDays(snapshot.data!)
+                      : 0;
+                  final workoutLabel = workoutDays == 1
+                      ? 'Workout'
+                      : 'Workouts';
 
-                return Column(
-                  children: [
-                    Text('$workoutDays $workoutLabel'),
-                    Text(
-                      '${months[DateTime.now().month - 1]} ${DateTime.now().day}, ${DateTime.now().year}',
-                      style: TextStyle(color: AppColors.mutedText),
-                    ),
-                  ],
-                );
-              },
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('$workoutDays $workoutLabel'),
+                      Text(
+                        '${months[DateTime.now().month - 1]} ${DateTime.now().day}, ${DateTime.now().year}',
+                        style: TextStyle(color: AppColors.mutedText),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),

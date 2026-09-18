@@ -37,12 +37,20 @@ class _NewExercisePageState extends State<NewExercisePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 50,
+        backgroundColor: AppColors.background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          tooltip: 'Close',
+          tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.keyboard_arrow_up, color: AppColors.primary),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_sharp,
+            color: AppColors.primary,
+          ),
         ),
-        title: const Text('New Exercise'),
+        title: const Text('New Exercise', style: TextStyle(fontSize: 16)),
         actions: [
           IconButton(
             tooltip: 'Save exercise',

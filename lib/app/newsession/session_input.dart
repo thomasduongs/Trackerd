@@ -16,14 +16,14 @@ class SessionInput extends StatefulWidget {
 
 class _SessionInputState extends State<SessionInput> {
   static const _muscleGroups = [
-    _MuscleGroup('Biceps', Icons.fitness_center),
-    _MuscleGroup('Triceps', Icons.sports_gymnastics),
-    _MuscleGroup('Shoulders', Icons.accessibility_new),
-    _MuscleGroup('Chest', Icons.favorite_outline),
-    _MuscleGroup('Back', Icons.self_improvement),
-    _MuscleGroup('Quads', Icons.directions_run),
-    _MuscleGroup('Hamstrings', Icons.directions_walk),
-    _MuscleGroup('Misc.', Icons.more_horiz),
+    _MuscleGroup('Biceps', 'lib/app/assets/muscles/biceps.png'),
+    _MuscleGroup('Triceps', 'lib/app/assets/muscles/triceps.png'),
+    _MuscleGroup('Shoulders', 'lib/app/assets/muscles/shoulders.png'),
+    _MuscleGroup('Chest', 'lib/app/assets/muscles/chest.png'),
+    _MuscleGroup('Back', 'lib/app/assets/muscles/back.png'),
+    _MuscleGroup('Quads', 'lib/app/assets/muscles/quads.png'),
+    _MuscleGroup('Hamstrings', 'lib/app/assets/muscles/hamstrings.png'),
+    _MuscleGroup('Misc.', 'lib/app/assets/muscles/abs.png'),
   ];
 
   final _scrollController = ScrollController();
@@ -122,6 +122,8 @@ class _SessionInputState extends State<SessionInput> {
                           children: [
                             GridView.builder(
                               itemCount: _muscleGroups.length,
+                              padding: EdgeInsets.zero,
+                              primary: false,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
@@ -154,10 +156,40 @@ class _SessionInputState extends State<SessionInput> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Icon(
-                                              muscleGroup.icon,
-                                              size: 28,
-                                              color: AppColors.primary,
+                                            ColorFiltered(
+                                              colorFilter:
+                                                  const ColorFilter.matrix(
+                                                    <double>[
+                                                      0.2126,
+                                                      0.7152,
+                                                      0.0722,
+                                                      0,
+                                                      0,
+                                                      0.2126,
+                                                      0.7152,
+                                                      0.0722,
+                                                      0,
+                                                      0,
+                                                      0.2126,
+                                                      0.7152,
+                                                      0.0722,
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      1,
+                                                      0,
+                                                    ],
+                                                  ),
+                                              child: Image.asset(
+                                                muscleGroup.assetPath,
+                                                width: 50,
+                                                height: 50,
+                                                fit: BoxFit.contain,
+                                                filterQuality:
+                                                    FilterQuality.medium,
+                                              ),
                                             ),
                                             const SizedBox(height: 6),
                                             Text(
@@ -287,41 +319,45 @@ class _SessionInputState extends State<SessionInput> {
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          height: 80,
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: AppColors.search, // your border color
-                width: 0.8,
+      bottomNavigationBar: Container(
+        color: AppColors.bar,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            height: 64,
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: AppColors.search, width: 0.8),
               ),
             ),
-          ),
-          child: BottomAppBar(
-            color: AppColors.bar,
-            child: StreamBuilder<List<ExerciseEntry>>(
-              stream: _todayExercises(context),
-              builder: (context, snapshot) {
-                final entries = snapshot.data ?? const <ExerciseEntry>[];
-                final exercises = _groupExerciseSets(entries);
-                final setCount = entries.where((entry) => entry.reps > 0).length;
-                final exerciseLabel = exercises.length == 1
-                    ? 'Exercise'
-                    : 'Exercises';
-                final setLabel = setCount == 1 ? 'Set' : 'Sets';
+            child: BottomAppBar(
+              color: AppColors.bar,
+              padding: EdgeInsets.zero,
+              child: StreamBuilder<List<ExerciseEntry>>(
+                stream: _todayExercises(context),
+                builder: (context, snapshot) {
+                  final entries = snapshot.data ?? const <ExerciseEntry>[];
+                  final exercises = _groupExerciseSets(entries);
+                  final setCount = entries
+                      .where((entry) => entry.reps > 0)
+                      .length;
+                  final exerciseLabel = exercises.length == 1
+                      ? 'Exercise'
+                      : 'Exercises';
+                  final setLabel = setCount == 1 ? 'Set' : 'Sets';
 
-                return Column(
-                  children: [
-                    Text('${exercises.length} $exerciseLabel'),
-                    Text(
-                      '$setCount $setLabel',
-                      style: const TextStyle(color: AppColors.mutedText),
-                    ),
-                  ],
-                );
-              },
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('${exercises.length} $exerciseLabel'),
+                      Text(
+                        '$setCount $setLabel',
+                        style: const TextStyle(color: AppColors.mutedText),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -451,10 +487,10 @@ class _ListMessage extends StatelessWidget {
 }
 
 class _MuscleGroup {
-  const _MuscleGroup(this.name, this.icon);
+  const _MuscleGroup(this.name, this.assetPath);
 
   final String name;
-  final IconData icon;
+  final String assetPath;
 }
 
 class _PinnedWidgetHeader extends SliverPersistentHeaderDelegate {
