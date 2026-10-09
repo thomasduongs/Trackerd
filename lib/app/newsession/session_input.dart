@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:trackerd_app/app/app_database_scope.dart';
 import 'package:trackerd_app/app/navigation/app_router.dart';
@@ -5,6 +6,7 @@ import 'package:trackerd_app/data/database/app_database.dart';
 
 import '../theme.dart';
 import 'exercise_catalog_page.dart';
+import '../components.dart';
 
 class SessionInput extends StatefulWidget {
   SessionInput({super.key, DateTime? sessionDate})
@@ -63,20 +65,51 @@ class _SessionInputState extends State<SessionInput> {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(12) / 12;
+    final columns = MediaQuery.sizeOf(context).width < 360 || textScale > 1.35
+        ? 2
+        : 4;
+    final cellHeight = columns == 4 ? 104.0 : 100.0 + 20 * textScale;
+    final grid = ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: GridView.builder(
+        itemCount: _muscleGroups.length,
+        padding: EdgeInsets.zero,
+        primary: false,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
+          mainAxisExtent: cellHeight,
+        ),
+        itemBuilder: (context, index) {
+          final group = _muscleGroups[index];
+          return _MuscleGroupTile(
+            group: group,
+            rightBorder: (index + 1) % columns != 0,
+            bottomBorder: index < _muscleGroups.length - columns,
+            onTap: () => Navigator.of(context).pushNamed(
+              AppRoutes.sessionExercise,
+              arguments: SessionExerciseRouteArgs(
+                muscleGroup: group.name,
+                performedAt: widget.sessionDate,
+              ),
+            ),
+          );
+        },
+      ),
+    );
     return Scaffold(
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
           SliverAppBar(
             pinned: true,
-            toolbarHeight: 50,
+            toolbarHeight: 52,
             leading: IconButton(
               tooltip: 'Back',
               onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(
-                Icons.arrow_back_ios_new_sharp,
-                color: AppColors.primary,
-              ),
+              icon: const Icon(CupertinoIcons.back, color: AppColors.primary),
             ),
             actions: [
               IconButton(
@@ -86,26 +119,33 @@ class _SessionInputState extends State<SessionInput> {
                     builder: (_) => const ExerciseCatalogPage(),
                   ),
                 ),
-                icon: const Icon(Icons.edit_note, color: AppColors.primary),
+                icon: const Icon(
+                  CupertinoIcons.pencil,
+                  color: AppColors.primary,
+                ),
               ),
               IconButton(
                 tooltip: 'Add a new exercise type',
                 onPressed: () =>
                     Navigator.of(context).pushNamed(AppRoutes.newExercise),
-                icon: const Icon(Icons.add, size: 30, color: AppColors.primary),
+                icon: const Icon(
+                  CupertinoIcons.add,
+                  size: 25,
+                  color: AppColors.primary,
+                ),
               ),
             ],
             title: AnimatedOpacity(
-              duration: const Duration(milliseconds: 60),
+              duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               opacity: _scrolled ? 1.0 : 0.0,
               child: Text(
                 _formattedSessionDate,
-                style: TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ),
             flexibleSpace: AnimatedContainer(
-              duration: const Duration(milliseconds: 60),
+              duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               decoration: BoxDecoration(
                 color: _scrolled ? AppColors.bar : AppColors.background,
@@ -118,161 +158,38 @@ class _SessionInputState extends State<SessionInput> {
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(15, 0, 15, 15),
-            sliver: SliverPersistentHeader(
-              pinned: true,
-              delegate: _PinnedWidgetHeader(
-                height: (MediaQuery.of(context).size.width - 30) / 2 + 30,
-                child: Builder(
-                  builder: (context) {
-                    return Column(
-                      children: [
-                        Stack(
-                          children: [
-                            GridView.builder(
-                              itemCount: _muscleGroups.length,
-                              padding: EdgeInsets.zero,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 4,
-                                  ),
-                              itemBuilder: (context, index) {
-                                final muscleGroup = _muscleGroups[index];
-
-                                return Semantics(
-                                  button: true,
-                                  label: 'Choose ${muscleGroup.name}',
-                                  child: Material(
-                                    color: AppColors.surface,
-                                    child: InkWell(
-                                      onTap: () =>
-                                          Navigator.of(context).pushNamed(
-                                            AppRoutes.sessionExercise,
-                                            arguments: SessionExerciseRouteArgs(
-                                              muscleGroup: muscleGroup.name,
-                                              performedAt: widget.sessionDate,
-                                            ),
-                                          ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 8,
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            ColorFiltered(
-                                              colorFilter:
-                                                  const ColorFilter.matrix(
-                                                    <double>[
-                                                      0.2126,
-                                                      0.7152,
-                                                      0.0722,
-                                                      0,
-                                                      0,
-                                                      0.2126,
-                                                      0.7152,
-                                                      0.0722,
-                                                      0,
-                                                      0,
-                                                      0.2126,
-                                                      0.7152,
-                                                      0.0722,
-                                                      0,
-                                                      0,
-                                                      0,
-                                                      0,
-                                                      0,
-                                                      1,
-                                                      0,
-                                                    ],
-                                                  ),
-                                              child: Image.asset(
-                                                muscleGroup.assetPath,
-                                                width: 50,
-                                                height: 50,
-                                                fit: BoxFit.contain,
-                                                filterQuality:
-                                                    FilterQuality.medium,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              muscleGroup.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              textAlign: TextAlign.center,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            ...List.generate(3, (index) {
-                              return Positioned(
-                                left:
-                                    (index + 1) *
-                                    (1 / 4) *
-                                    (MediaQuery.of(context).size.width - 30),
-                                top: 15,
-                                height:
-                                    MediaQuery.of(context).size.width * .5 - 45,
-                                child: const VerticalDivider(
-                                  thickness: 1,
-                                  color: AppColors.search,
-                                  width: 1,
-                                ),
-                              );
-                            }),
-
-                            Positioned(
-                              top: (MediaQuery.of(context).size.width - 30) / 4,
-                              left: 0,
-                              right: 0,
-                              child: const Divider(
-                                thickness: 1,
-                                color: AppColors.search,
-                                indent: 15,
-                                endIndent: 15,
-                                height: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
+          const SliverToBoxAdapter(
+            child: AppSectionHeading(
+              'Choose a body part',
+              subtitle: 'Select an exercise to add to your session.',
             ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            sliver: columns == 4
+                ? SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _PinnedWidgetHeader(
+                      height: cellHeight * 2 + 20,
+                      child: grid,
+                    ),
+                  )
+                : SliverToBoxAdapter(child: grid),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(30, 5, 15, 15),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
               child: Text(
                 _formattedSessionDate,
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(30, 15, 30, 15),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             sliver: SliverToBoxAdapter(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: ColoredBox(
                   color: AppColors.surface,
                   child: StreamBuilder<List<ExerciseEntry>>(
@@ -294,7 +211,8 @@ class _SessionInputState extends State<SessionInput> {
                       final exercises = _groupExerciseSets(snapshot.data!);
                       if (exercises.isEmpty) {
                         return const _ListMessage(
-                          message: 'No exercises recorded today.',
+                          message:
+                              'No exercises recorded for this session. Choose a body part to start.',
                         );
                       }
 
@@ -329,48 +247,17 @@ class _SessionInputState extends State<SessionInput> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        color: AppColors.bar,
-        child: SafeArea(
-          top: false,
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: AppColors.search, width: 0.8),
-              ),
-            ),
-            child: BottomAppBar(
-              color: AppColors.bar,
-              padding: EdgeInsets.zero,
-              child: StreamBuilder<List<ExerciseEntry>>(
-                stream: _todayExercises(context),
-                builder: (context, snapshot) {
-                  final entries = snapshot.data ?? const <ExerciseEntry>[];
-                  final exercises = _groupExerciseSets(entries);
-                  final setCount = entries
-                      .where((entry) => entry.reps > 0)
-                      .length;
-                  final exerciseLabel = exercises.length == 1
-                      ? 'Exercise'
-                      : 'Exercises';
-                  final setLabel = setCount == 1 ? 'Set' : 'Sets';
-
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('${exercises.length} $exerciseLabel'),
-                      Text(
-                        '$setCount $setLabel',
-                        style: const TextStyle(color: AppColors.mutedText),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      bottomNavigationBar: StreamBuilder<List<ExerciseEntry>>(
+        stream: _todayExercises(context),
+        builder: (context, snapshot) {
+          final entries = snapshot.data ?? const <ExerciseEntry>[];
+          final count = _groupExerciseSets(entries).length;
+          final sets = entries.where((entry) => entry.reps > 0).length;
+          return AppSummaryBar(
+            primary: '$count ${count == 1 ? 'Exercise' : 'Exercises'}',
+            secondary: '$sets ${sets == 1 ? 'Set' : 'Sets'}',
+          );
+        },
       ),
     );
   }
@@ -461,8 +348,36 @@ class _ExerciseListTile extends StatelessWidget {
           right: 4,
           child: IconButton(
             tooltip: 'Delete ${exercise.name}',
-            onPressed: onDelete,
-            icon: const Icon(Icons.remove, size: 22, color: AppColors.primary),
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog.adaptive(
+                  title: Text('Remove ${exercise.name}?'),
+                  content: const Text(
+                    'This removes its sets from this session.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Remove',
+                        style: TextStyle(color: AppColors.destructive),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true) await onDelete();
+            },
+            icon: const Icon(
+              CupertinoIcons.minus_circle,
+              size: 22,
+              color: AppColors.destructive,
+            ),
           ),
         ),
       ],
@@ -521,59 +436,108 @@ class _PinnedWidgetHeader extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return SizedBox(
-      height: maxExtent,
-      child: Column(
-        children: [
-          Expanded(
-            child: AnimatedTopClip(
-              overlaps: shrinkOffset > 7,
-              child: Container(color: AppColors.surface, child: child),
-            ),
-          ),
-          Container(height: 30, color: AppColors.background),
-        ],
+    // The grid owns its rounded clip. An opaque background masks scrolling
+    // content without painting a second white shape behind the grid corners.
+    return ColoredBox(
+      color: AppColors.background,
+      child: SizedBox(
+        height: maxExtent,
+        child: Column(
+          children: [
+            Expanded(child: child),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
 
   @override
-  bool shouldRebuild(_PinnedWidgetHeader oldDelegate) => false;
+  bool shouldRebuild(_PinnedWidgetHeader oldDelegate) =>
+      height != oldDelegate.height || child != oldDelegate.child;
 }
 
-class AnimatedTopClip extends StatelessWidget {
-  const AnimatedTopClip({
-    super.key,
-    required this.overlaps,
-    required this.child,
-    this.radius = 12,
-    this.duration = const Duration(milliseconds: 60),
+class _MuscleGroupTile extends StatelessWidget {
+  const _MuscleGroupTile({
+    required this.group,
+    required this.rightBorder,
+    required this.bottomBorder,
+    required this.onTap,
   });
-
-  final bool overlaps;
-  final Widget child;
-  final double radius;
-  final Duration duration;
+  final _MuscleGroup group;
+  final bool rightBorder;
+  final bool bottomBorder;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(overlaps),
-      tween: Tween(
-        begin: overlaps ? radius : 0.0,
-        end: overlaps ? 0.0 : radius,
-      ),
-      duration: duration,
-      curve: Curves.easeOut,
-      builder: (context, r, _) {
-        return ClipRRect(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(r),
-            bottom: Radius.circular(radius),
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Choose ${group.name}',
+    excludeSemantics: true,
+    child: Material(
+      color: AppColors.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              right: rightBorder
+                  ? const BorderSide(color: AppColors.search, width: .5)
+                  : BorderSide.none,
+              bottom: bottomBorder
+                  ? const BorderSide(color: AppColors.search, width: .5)
+                  : BorderSide.none,
+            ),
           ),
-          child: child,
-        );
-      },
-    );
-  }
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ColorFiltered(
+                colorFilter: const ColorFilter.matrix([
+                  .2126,
+                  .7152,
+                  .0722,
+                  0,
+                  0,
+                  .2126,
+                  .7152,
+                  .0722,
+                  0,
+                  0,
+                  .2126,
+                  .7152,
+                  .0722,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  1,
+                  0,
+                ]),
+                child: Image.asset(
+                  group.assetPath,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.medium,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                group.name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: -.15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

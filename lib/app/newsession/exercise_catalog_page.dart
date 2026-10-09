@@ -1,8 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:trackerd_app/app/app_database_scope.dart';
 import 'package:trackerd_app/data/database/app_database.dart';
 
 import 'new_exercise_page.dart';
+import '../theme.dart';
+import '../components.dart';
 
 class ExerciseCatalogPage extends StatefulWidget {
   const ExerciseCatalogPage({super.key});
@@ -13,6 +16,14 @@ class ExerciseCatalogPage extends StatefulWidget {
 
 class _ExerciseCatalogPageState extends State<ExerciseCatalogPage> {
   Stream<List<Exercise>>? _catalog;
+  String _search = '';
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -29,19 +40,20 @@ class _ExerciseCatalogPageState extends State<ExerciseCatalogPage> {
   }
 
   Future<void> _delete(Exercise exercise) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showCupertinoDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => CupertinoAlertDialog(
         title: Text('Delete ${exercise.exerciseName}?'),
         content: const Text(
           'This removes the exercise from the catalog. Your logged workouts will be kept.',
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          CupertinoDialogAction(
+            isDestructiveAction: true,
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -66,11 +78,16 @@ class _ExerciseCatalogPageState extends State<ExerciseCatalogPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exercises'),
+        leading: IconButton(
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(CupertinoIcons.back),
+        ),
         actions: [
           IconButton(
             tooltip: 'Add a new exercise type',
             onPressed: () => _openEditor(),
-            icon: const Icon(Icons.add),
+            icon: const Icon(CupertinoIcons.add),
           ),
         ],
       ),
@@ -83,38 +100,122 @@ class _ExerciseCatalogPageState extends State<ExerciseCatalogPage> {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final exercises = snapshot.data!;
-          if (exercises.isEmpty) {
-            return const Center(
-              child: Text('No exercises yet. Tap + to add one.'),
-            );
+          final all = snapshot.data!;
+          final exercises = all
+              .where(
+                (exercise) => '${exercise.exerciseName} ${exercise.muscleGroup}'
+                    .toLowerCase()
+                    .contains(_search.trim().toLowerCase()),
+              )
+              .toList();
+          final groups = <String, List<Exercise>>{};
+          for (final exercise in exercises) {
+            groups.putIfAbsent(exercise.muscleGroup, () => []).add(exercise);
           }
-          return ListView.separated(
-            itemCount: exercises.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final exercise = exercises[index];
-              return ListTile(
-                title: Text(exercise.exerciseName),
-                subtitle: Text(exercise.muscleGroup),
-                onTap: () => _openEditor(exercise),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: 'Edit ${exercise.exerciseName}',
-                      onPressed: () => _openEditor(exercise),
-                      icon: const Icon(Icons.edit_outlined),
-                    ),
-                    IconButton(
-                      tooltip: 'Delete ${exercise.exerciseName}',
-                      onPressed: () => _delete(exercise),
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                  ],
+          return CustomScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your exercise library',
+                        style: Theme.of(context).textTheme.headlineLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${all.length} exercises · Tap an exercise to edit',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 20),
+                      CupertinoSearchTextField(
+                        controller: _searchController,
+                        placeholder: 'Find an exercise',
+                        backgroundColor: AppColors.search,
+                        borderRadius: BorderRadius.circular(12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 13,
+                        ),
+                        onChanged: (value) => setState(() => _search = value),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
+              ),
+              if (groups.isEmpty)
+                SliverToBoxAdapter(
+                  child: AppEmptyState(
+                    icon: CupertinoIcons.search,
+                    title: all.isEmpty
+                        ? 'Build your exercise library'
+                        : 'No matching exercises',
+                    message: all.isEmpty
+                        ? 'Tap + to add your first exercise.'
+                        : 'Try a different name or body part.',
+                  ),
+                ),
+              for (final group in groups.entries) ...[
+                SliverToBoxAdapter(child: AppSectionHeading(group.key)),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList.builder(
+                    itemCount: group.value.length,
+                    itemBuilder: (context, index) {
+                      final exercise = group.value[index];
+                      return Material(
+                        color: AppColors.surface,
+                        clipBehavior: Clip.antiAlias,
+                        borderRadius: BorderRadius.vertical(
+                          top: index == 0
+                              ? const Radius.circular(16)
+                              : Radius.zero,
+                          bottom: index == group.value.length - 1
+                              ? const Radius.circular(16)
+                              : Radius.zero,
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: Text(exercise.exerciseName),
+                              onTap: () => _openEditor(exercise),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'Edit ${exercise.exerciseName}',
+                                    onPressed: () => _openEditor(exercise),
+                                    icon: const Icon(
+                                      CupertinoIcons.pencil,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Delete ${exercise.exerciseName}',
+                                    onPressed: () => _delete(exercise),
+                                    icon: const Icon(
+                                      CupertinoIcons.minus_circle,
+                                      size: 21,
+                                      color: AppColors.destructive,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (index != group.value.length - 1)
+                              const Divider(height: .5, indent: 16),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            ],
           );
         },
       ),

@@ -94,7 +94,7 @@ class _SessionExerciseState extends State<SessionExercise> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 50,
+        toolbarHeight: 52,
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -102,16 +102,14 @@ class _SessionExerciseState extends State<SessionExercise> {
         leading: IconButton(
           tooltip: 'Back to muscle groups',
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(
-            Icons.arrow_back_ios_new_sharp,
-            color: AppColors.primary,
-          ),
+          icon: const Icon(CupertinoIcons.back, color: AppColors.primary),
         ),
+        title: Text(widget.muscleGroup),
         actions: [
           IconButton(
             tooltip: 'Manage exercises',
             onPressed: _isSubmitting ? null : _manageExercises,
-            icon: const Icon(Icons.edit_note, color: AppColors.primary),
+            icon: const Icon(CupertinoIcons.pencil, color: AppColors.primary),
           ),
           IconButton(
             tooltip: 'Submit exercise',
@@ -119,18 +117,30 @@ class _SessionExerciseState extends State<SessionExercise> {
                 _isSubmitting || _isLoading || _loadFailed || _exercises.isEmpty
                 ? null
                 : _submitExercise,
-            icon: const Icon(Icons.check, size: 30, color: AppColors.primary),
+            icon: const Icon(
+              CupertinoIcons.check_mark,
+              size: 25,
+              color: AppColors.primary,
+            ),
           ),
         ],
       ),
       body: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 10),
+                child: Text(
+                  'EXERCISE',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
               Container(
-                height: 180,
+                height: 156,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
@@ -155,7 +165,10 @@ class _SessionExerciseState extends State<SessionExercise> {
                       )
                     : CupertinoPicker(
                         key: ValueKey(_pickerRevision),
-                        itemExtent: 40,
+                        itemExtent:
+                            MediaQuery.textScalerOf(context).scale(17) > 23
+                            ? 72
+                            : 52,
                         diameterRatio: 1.4,
                         squeeze: 1,
                         useMagnifier: true,
@@ -165,17 +178,28 @@ class _SessionExerciseState extends State<SessionExercise> {
                         },
                         children: _exercises
                             .map(
-                              (exercise) => Center(
-                                child: Text(
-                                  exercise.exerciseName,
-                                  style: const TextStyle(fontSize: 17),
+                              (exercise) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    exercise.exerciseName,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
                                 ),
                               ),
                             )
                             .toList(),
                       ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 28),
               const Row(
                 children: [
                   SizedBox(width: 48),
@@ -188,7 +212,7 @@ class _SessionExerciseState extends State<SessionExercise> {
                             child: Center(
                               child: Text(
                                 'Reps',
-                                style: TextStyle(fontSize: 16),
+                                style: TextStyle(fontSize: 14),
                               ),
                             ),
                           ),
@@ -196,8 +220,8 @@ class _SessionExerciseState extends State<SessionExercise> {
                           Expanded(
                             child: Center(
                               child: Text(
-                                'Weight',
-                                style: TextStyle(fontSize: 16),
+                                'Weight · lbs',
+                                style: TextStyle(fontSize: 14),
                               ),
                             ),
                           ),
@@ -205,48 +229,31 @@ class _SessionExerciseState extends State<SessionExercise> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 36),
+                  SizedBox(width: 44),
                 ],
               ),
               const SizedBox(height: 8),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    const maximumRowsHeight = (90.0 * 4) + (8.0 * 3);
-                    final rowsHeight = constraints.maxHeight < maximumRowsHeight
-                        ? constraints.maxHeight
-                        : maximumRowsHeight;
-
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        height: rowsHeight,
-                        child: Column(
-                          children: List.generate(4, (index) {
-                            return Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: index == 3 ? 0 : 8,
-                                ),
-                                child: _SetRow(
-                                  number: index + 1,
-                                  repsController: _repsControllers[index],
-                                  weightController: _weightControllers[index],
-                                  onRepsChanged: (value) =>
-                                      _updateRepsFrom(index, value),
-                                  onWeightChanged: (value) =>
-                                      _updateWeightFrom(index, value),
-                                  onClear: index == 0
-                                      ? null
-                                      : () => _clearSet(index),
-                                ),
-                              ),
-                            );
-                          }),
+              SizedBox(
+                height: 384,
+                child: Column(
+                  children: List.generate(
+                    4,
+                    (index) => Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: index == 3 ? 0 : 8),
+                        child: _SetRow(
+                          number: index + 1,
+                          repsController: _repsControllers[index],
+                          weightController: _weightControllers[index],
+                          onRepsChanged: (value) =>
+                              _updateRepsFrom(index, value),
+                          onWeightChanged: (value) =>
+                              _updateWeightFrom(index, value),
+                          onClear: index == 0 ? null : () => _clearSet(index),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -351,9 +358,13 @@ class _SetRow extends StatelessWidget {
         SizedBox(
           width: 48,
           child: Text(
-            '$number:',
-            textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 23),
+            '$number',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: AppColors.mutedText,
+            ),
           ),
         ),
         Expanded(
@@ -362,13 +373,14 @@ class _SetRow extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: _NumberPicker(
                       controller: repsController,
+                      semanticLabel: 'Set $number repetitions',
                       itemCount: 21,
                       labelBuilder: (index) => '$index',
                       onChanged: (index) => onRepsChanged(index),
@@ -382,6 +394,7 @@ class _SetRow extends StatelessWidget {
                   Expanded(
                     child: _NumberPicker(
                       controller: weightController,
+                      semanticLabel: 'Set $number weight in pounds',
                       itemCount: 201,
                       labelBuilder: (index) => _formatWeight(index * 2.5),
                       onChanged: (index) => onWeightChanged(index * 2.5),
@@ -393,19 +406,19 @@ class _SetRow extends StatelessWidget {
           ),
         ),
         SizedBox(
-          width: 36,
+          width: 44,
           child: onClear == null
               ? null
               : IconButton(
                   tooltip: 'Clear set $number',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
-                    width: 32,
-                    height: 32,
+                    width: 44,
+                    height: 44,
                   ),
                   onPressed: onClear,
                   icon: const Icon(
-                    Icons.remove,
+                    CupertinoIcons.minus,
                     size: 20,
                     color: AppColors.primary,
                   ),
@@ -425,33 +438,46 @@ class _SetRow extends StatelessWidget {
 class _NumberPicker extends StatelessWidget {
   const _NumberPicker({
     required this.controller,
+    required this.semanticLabel,
     required this.itemCount,
     required this.labelBuilder,
     required this.onChanged,
   });
 
   final FixedExtentScrollController controller;
+  final String semanticLabel;
   final int itemCount;
   final String Function(int index) labelBuilder;
   final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPicker.builder(
-      scrollController: controller,
-      itemExtent: 34,
-      diameterRatio: 1.2,
-      squeeze: 1,
-      useMagnifier: true,
-      magnification: 1.08,
-      selectionOverlay: const SizedBox.shrink(),
-      changeReportingBehavior: ChangeReportingBehavior.onScrollEnd,
-      onSelectedItemChanged: onChanged,
-      childCount: itemCount,
-      itemBuilder: (_, index) => Center(
-        child: Text(
-          labelBuilder(index),
-          style: const TextStyle(fontSize: 21, color: AppColors.mutedText),
+    return Semantics(
+      label: semanticLabel,
+      child: CupertinoPicker.builder(
+        scrollController: controller,
+        itemExtent: MediaQuery.textScalerOf(
+          context,
+        ).scale(19).clamp(34.0, 60.0),
+        diameterRatio: 1.2,
+        squeeze: 1,
+        useMagnifier: true,
+        magnification: 1.08,
+        selectionOverlay: const CupertinoPickerDefaultSelectionOverlay(
+          background: Color(0x0A000000),
+        ),
+        changeReportingBehavior: ChangeReportingBehavior.onScrollEnd,
+        onSelectedItemChanged: onChanged,
+        childCount: itemCount,
+        itemBuilder: (_, index) => Center(
+          child: Text(
+            labelBuilder(index),
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w400,
+              color: AppColors.text,
+            ),
+          ),
         ),
       ),
     );

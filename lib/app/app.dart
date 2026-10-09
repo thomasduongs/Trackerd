@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:trackerd_app/app/app_database_scope.dart';
 import 'package:trackerd_app/app/navigation/app_router.dart';
 import 'package:trackerd_app/data/database/app_database.dart';
 import 'theme.dart';
+import 'components.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -13,6 +15,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final _scrollController = ScrollController();
   bool _scrolled = false;
+  Stream<List<ExerciseEntry>>? _entries;
   List<String> months = [
     'Jan',
     'Feb',
@@ -38,6 +41,12 @@ class _HomeState extends State<Home> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _entries ??= AppDatabaseScope.of(context).watchAllExercises();
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
@@ -51,27 +60,31 @@ class _HomeState extends State<Home> {
         slivers: [
           SliverAppBar(
             pinned: true,
-            toolbarHeight: 50,
+            toolbarHeight: 52,
             automaticallyImplyLeading: false,
             actions: [
               IconButton(
                 tooltip: 'Start a new session',
                 onPressed: () =>
                     Navigator.of(context).pushNamed(AppRoutes.sessionInput),
-                icon: const Icon(Icons.add, size: 30, color: AppColors.primary),
+                icon: const Icon(
+                  CupertinoIcons.add,
+                  size: 25,
+                  color: AppColors.primary,
+                ),
               ),
             ],
             title: AnimatedOpacity(
-              duration: const Duration(milliseconds: 60),
+              duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               opacity: _scrolled ? 1.0 : 0.0,
               child: const Text(
                 'Workout Tracker',
-                style: TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ),
             flexibleSpace: AnimatedContainer(
-              duration: const Duration(milliseconds: 60),
+              duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               decoration: BoxDecoration(
                 color: _scrolled ? AppColors.bar : AppColors.background,
@@ -86,31 +99,23 @@ class _HomeState extends State<Home> {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(15, 5, 15, 15),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
               child: Text(
                 'Workout Tracker',
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineLarge,
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(15),
-              child: Text(
-                'Recent Sessions',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
+          const SliverToBoxAdapter(child: AppSectionHeading('Recent Sessions')),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(30, 15, 30, 15),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
             sliver: SliverToBoxAdapter(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: ColoredBox(
                   color: AppColors.surface,
                   child: StreamBuilder<List<ExerciseEntry>>(
-                    stream: AppDatabaseScope.of(context).watchAllExercises(),
+                    stream: _entries,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Padding(
@@ -121,14 +126,11 @@ class _HomeState extends State<Home> {
 
                       final sessions = _recentSessions(snapshot.data!);
                       if (sessions.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text(
-                              'No sessions recorded yet.',
-                              style: TextStyle(color: AppColors.mutedText),
-                            ),
-                          ),
+                        return const AppEmptyState(
+                          icon: CupertinoIcons.calendar,
+                          title: 'Your first session starts here',
+                          message:
+                              'Tap + to start a workout. Your recent sessions will appear here.',
                         );
                       }
 
@@ -157,24 +159,16 @@ class _HomeState extends State<Home> {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(15),
-              child: Text(
-                'Stats',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
+          const SliverToBoxAdapter(child: AppSectionHeading('Stats')),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(30, 15, 30, 15),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
             sliver: SliverToBoxAdapter(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: ColoredBox(
                   color: AppColors.surface,
                   child: StreamBuilder<List<ExerciseEntry>>(
-                    stream: AppDatabaseScope.of(context).watchAllExercises(),
+                    stream: _entries,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Padding(
@@ -185,14 +179,11 @@ class _HomeState extends State<Home> {
 
                       final stats = _exerciseStats(snapshot.data!);
                       if (stats.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text(
-                              'No exercise history yet.',
-                              style: TextStyle(color: AppColors.mutedText),
-                            ),
-                          ),
+                        return const AppEmptyState(
+                          icon: CupertinoIcons.graph_circle,
+                          title: 'See your progress',
+                          message:
+                              'Log your sets to track your personal bests over time.',
                         );
                       }
 
@@ -218,45 +209,16 @@ class _HomeState extends State<Home> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        color: AppColors.bar,
-        child: SafeArea(
-          top: false,
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: AppColors.search, width: 0.8),
-              ),
-            ),
-            child: BottomAppBar(
-              color: AppColors.bar,
-              padding: EdgeInsets.zero,
-              child: StreamBuilder<List<ExerciseEntry>>(
-                stream: AppDatabaseScope.of(context).watchAllExercises(),
-                builder: (context, snapshot) {
-                  final workoutDays = snapshot.hasData
-                      ? _loggedWorkoutDays(snapshot.data!)
-                      : 0;
-                  final workoutLabel = workoutDays == 1
-                      ? 'Workout'
-                      : 'Workouts';
-
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('$workoutDays $workoutLabel'),
-                      Text(
-                        '${months[DateTime.now().month - 1]} ${DateTime.now().day}, ${DateTime.now().year}',
-                        style: TextStyle(color: AppColors.mutedText),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      bottomNavigationBar: StreamBuilder<List<ExerciseEntry>>(
+        stream: _entries,
+        builder: (context, snapshot) {
+          final count = _loggedWorkoutDays(snapshot.data ?? []);
+          final now = DateTime.now();
+          return AppSummaryBar(
+            primary: '$count ${count == 1 ? 'Workout' : 'Workouts'}',
+            secondary: '${months[now.month - 1]} ${now.day}, ${now.year}',
+          );
+        },
       ),
     );
   }
@@ -412,12 +374,35 @@ class _RecentSessionTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       title: Text(_formatDate(session.date)),
-      subtitle: Text(session.bodyParts.join(' • ')),
-      trailing: Text(
-        '${session.exerciseCount} $exerciseLabel\n${session.setCount} $setLabel',
-        textAlign: TextAlign.right,
-        style: const TextStyle(color: AppColors.mutedText),
+      subtitle: Text(
+        '${session.bodyParts.join(' • ')}${MediaQuery.textScalerOf(context).scale(13) > 18 ? '\n${session.exerciseCount} $exerciseLabel · ${session.setCount} $setLabel' : ''}',
       ),
+      trailing: MediaQuery.textScalerOf(context).scale(13) > 18
+          ? const Icon(
+              CupertinoIcons.chevron_right,
+              size: 18,
+              color: AppColors.mutedText,
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${session.exerciseCount} $exerciseLabel\n${session.setCount} $setLabel',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: AppColors.mutedText,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Icon(
+                  CupertinoIcons.chevron_right,
+                  size: 18,
+                  color: AppColors.mutedText,
+                ),
+              ],
+            ),
     );
   }
 
@@ -474,12 +459,38 @@ class _StatMetricRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Text(label)),
-        const SizedBox(width: 8),
-        Text(date, style: const TextStyle(color: AppColors.mutedText)),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = MediaQuery.textScalerOf(context).scale(13) / 13;
+        if (constraints.maxWidth < 300 || scale > 1.35) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label),
+                Text(
+                  date,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.mutedText,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: Text(label)),
+            const SizedBox(width: 8),
+            Text(
+              date,
+              style: const TextStyle(fontSize: 12, color: AppColors.mutedText),
+            ),
+          ],
+        );
+      },
     );
   }
 }

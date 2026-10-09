@@ -50,7 +50,7 @@ class _NewExercisePageState extends State<NewExercisePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 50,
+        toolbarHeight: 52,
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -58,20 +58,20 @@ class _NewExercisePageState extends State<NewExercisePage> {
         leading: IconButton(
           tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(
-            Icons.arrow_back_ios_new_sharp,
-            color: AppColors.primary,
-          ),
+          icon: const Icon(CupertinoIcons.back, color: AppColors.primary),
         ),
         title: Text(
           widget.exercise == null ? 'New Exercise' : 'Edit Exercise',
-          style: const TextStyle(fontSize: 16),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         actions: [
           IconButton(
             tooltip: 'Save exercise',
             onPressed: _isSaving ? null : _save,
-            icon: const Icon(Icons.check, color: AppColors.primary),
+            icon: const Icon(
+              CupertinoIcons.check_mark,
+              color: AppColors.primary,
+            ),
           ),
         ],
       ),
@@ -82,9 +82,9 @@ class _NewExercisePageState extends State<NewExercisePage> {
             const _FieldLabel('BODY PART'),
             const SizedBox(height: 7),
             CupertinoButton(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              color: CupertinoColors.systemGrey6.resolveFrom(context),
-              borderRadius: BorderRadius.circular(10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
               onPressed: _chooseMuscleGroup,
               child: Row(
                 children: [
@@ -98,7 +98,7 @@ class _NewExercisePageState extends State<NewExercisePage> {
                     child: Text(
                       _muscleGroup,
                       style: TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         color: CupertinoColors.label.resolveFrom(context),
                       ),
                     ),
@@ -118,26 +118,39 @@ class _NewExercisePageState extends State<NewExercisePage> {
               controller: _nameController,
               maxLength: 120,
               autofocus: true,
+              textInputAction: TextInputAction.done,
+              style: const TextStyle(fontSize: 16, color: AppColors.text),
               textCapitalization: TextCapitalization.words,
               placeholder: 'e.g. Preacher Curl',
               prefix: const Padding(
                 padding: EdgeInsets.only(left: 12),
                 child: Icon(
-                  CupertinoIcons.search,
+                  CupertinoIcons.pencil,
                   size: 20,
                   color: CupertinoColors.secondaryLabel,
                 ),
               ),
               clearButtonMode: OverlayVisibilityMode.editing,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
-                color: CupertinoColors.systemGrey6.resolveFrom(context),
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
               ),
               onChanged: (_) {
                 if (_nameError != null) setState(() => _nameError = null);
               },
               onSubmitted: (_) => _save(),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: Text(
+                'Exercises are available for future sessions. Your logged workouts stay as recorded.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: AppColors.mutedText,
+                ),
+              ),
             ),
             if (_nameError != null)
               Padding(
@@ -234,7 +247,9 @@ class _FieldLabel extends StatelessWidget {
         text,
         style: const TextStyle(
           fontSize: 13,
-          color: CupertinoColors.secondaryLabel,
+          color: AppColors.mutedText,
+          letterSpacing: .6,
+          fontWeight: FontWeight.w400,
         ),
       ),
     );

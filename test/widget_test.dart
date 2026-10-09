@@ -24,11 +24,11 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CupertinoIcons.add));
     await tester.pumpAndSettle();
     expect(find.byType(SessionInput), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_sharp));
+    await tester.tap(find.byIcon(CupertinoIcons.back));
     await tester.pumpAndSettle();
     expect(find.byType(Home), findsOneWidget);
     await _disposeApp(tester);
@@ -37,7 +37,7 @@ void main() {
   testWidgets('muscle group opens the exercise page', (tester) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CupertinoIcons.add));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Biceps'));
     await tester.pumpAndSettle();
@@ -51,13 +51,13 @@ void main() {
   ) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CupertinoIcons.add));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Biceps'));
     await tester.pumpAndSettle();
     await tester.drag(find.text('0').first, const Offset(0, -60));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.check));
+    await tester.tap(find.byIcon(CupertinoIcons.check_mark));
     await tester.pumpAndSettle();
 
     expect(find.byType(SessionInput), findsOneWidget);
@@ -94,7 +94,7 @@ void main() {
       sets: const [ExerciseSetInput(reps: 12, weight: 15)],
     );
 
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CupertinoIcons.add));
     await tester.pumpAndSettle();
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
     await tester.pumpAndSettle();
@@ -118,7 +118,7 @@ void main() {
   testWidgets('adds a custom exercise from the sliding page', (tester) async {
     final database = await _pumpApp(tester);
 
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CupertinoIcons.add));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Add a new exercise type'));
     await tester.pumpAndSettle();
@@ -140,7 +140,7 @@ void main() {
 
   testWidgets('manage exercises edits and deletes an exercise', (tester) async {
     final database = await _pumpApp(tester);
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CupertinoIcons.add));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Manage exercises'));
     await tester.pumpAndSettle();
@@ -160,7 +160,7 @@ void main() {
     );
     await tester.tap(find.byTooltip('Delete Corrected Back Extension'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+    await tester.tap(find.widgetWithText(CupertinoDialogAction, 'Delete'));
     await tester.pumpAndSettle();
     expect(
       (await database.exerciseCatalog(
@@ -178,7 +178,7 @@ void main() {
     for (final exercise in await database.exerciseCatalog('Biceps')) {
       await database.deleteExercise(exercise.id);
     }
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(CupertinoIcons.add));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Biceps'));
     await tester.pumpAndSettle();
@@ -188,7 +188,9 @@ void main() {
     );
     expect(
       tester
-          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.check))
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, CupertinoIcons.check_mark),
+          )
           .onPressed,
       isNull,
     );
@@ -204,10 +206,51 @@ void main() {
     expect(find.text('My Curl'), findsOneWidget);
     expect(
       tester
-          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.check))
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, CupertinoIcons.check_mark),
+          )
           .onPressed,
       isNotNull,
     );
+    await _disposeApp(tester);
+  });
+
+  testWidgets('exercise library search filters by name and body part', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await tester.tap(find.byIcon(CupertinoIcons.add));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Manage exercises'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(CupertinoTextField), 'Hamstrings');
+    await tester.pumpAndSettle();
+    expect(find.text('Seated Hamstring Curl'), findsOneWidget);
+    expect(find.text('Stiff Leg Deadlift'), findsOneWidget);
+    expect(find.text('Back Extensions'), findsNothing);
+    await tester.enterText(find.byType(CupertinoTextField), 'no such exercise');
+    await tester.pumpAndSettle();
+    expect(find.text('No matching exercises'), findsOneWidget);
+    await _disposeApp(tester);
+  });
+
+  testWidgets('small screen and larger text keep workout controls usable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pumpApp(tester);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byIcon(CupertinoIcons.add));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Biceps'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
     await _disposeApp(tester);
   });
 
