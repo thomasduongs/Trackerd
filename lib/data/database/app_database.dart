@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'default_exercises.dart';
+
 part 'app_database.g.dart';
 
 class ExerciseEntries extends Table {
@@ -16,7 +18,7 @@ class ExerciseEntries extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-class CustomExercises extends Table {
+class Exercises extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get muscleGroup => text().withLength(min: 1, max: 40)();
   TextColumn get exerciseName => text().withLength(min: 1, max: 120)();
@@ -28,13 +30,13 @@ class CustomExercises extends Table {
   ];
 }
 
-@DriftDatabase(tables: [ExerciseEntries, CustomExercises])
+@DriftDatabase(tables: [ExerciseEntries, Exercises])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(driftDatabase(name: 'trackerd'));
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,41 +46,128 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX exercise_entries_name_date_idx '
         'ON exercise_entries (exercise_name, performed_at)',
       );
+      await _seedExercises();
     },
     onUpgrade: (migrator, from, to) async {
-      if (from < 2) {
-        await migrator.createTable(customExercises);
-      }
       if (from < 3) {
         await migrator.addColumn(exerciseEntries, exerciseEntries.muscleGroup);
+      }
+      if (from < 4) {
+        if (from >= 2) {
+          await customStatement(
+            'ALTER TABLE custom_exercises RENAME TO exercises',
+          );
+        } else {
+          await migrator.createTable(exercises);
+        }
+        await _seedExercises();
       }
     },
   );
 
-  Future<void> addCustomExercise({
+  Future<void> _seedExercises() async {
+    for (final group in defaultExercises.entries) {
+      for (final name in group.value) {
+        await addExercise(muscleGroup: group.key, exerciseName: name);
+      }
+    }
+  }
+
+  Future<bool> addExercise({
     required String muscleGroup,
     required String exerciseName,
   }) async {
-    await into(customExercises).insert(
-      CustomExercisesCompanion.insert(
-        muscleGroup: muscleGroup.trim(),
-        exerciseName: exerciseName.trim(),
-        createdAt: DateTime.now(),
-      ),
-      mode: InsertMode.insertOrIgnore,
-    );
+    return transaction(() async {
+      final name = exerciseName.trim();
+      final group = muscleGroup.trim();
+      _validateExercise(group, name);
+      if (await _exerciseExists(group, name)) return false;
+      await into(exercises).insert(
+        ExercisesCompanion.insert(
+          muscleGroup: group,
+          exerciseName: name,
+          createdAt: DateTime.now(),
+        ),
+      );
+      return true;
+    });
   }
 
-  Future<List<String>> customExerciseNames(String muscleGroup) async {
-    final rows =
-        await (select(customExercises)
-              ..where((exercise) => exercise.muscleGroup.equals(muscleGroup))
-              ..orderBy([
-                (exercise) => OrderingTerm.asc(exercise.exerciseName),
-              ]))
-            .get();
-    return rows.map((exercise) => exercise.exerciseName).toList();
+  Future<bool> updateExercise({
+    required int id,
+    required String muscleGroup,
+    required String exerciseName,
+  }) {
+    return transaction(() async {
+      final name = exerciseName.trim();
+      final group = muscleGroup.trim();
+      _validateExercise(group, name);
+      if (await _exerciseExists(group, name, excludingId: id)) return false;
+      final changed =
+          await (update(exercises)..where((row) => row.id.equals(id))).write(
+            ExercisesCompanion(
+              muscleGroup: Value(group),
+              exerciseName: Value(name),
+            ),
+          );
+      if (changed == 0) throw StateError('Exercise no longer exists.');
+      return true;
+    });
   }
+
+  Future<bool> _exerciseExists(
+    String group,
+    String name, {
+    int? excludingId,
+  }) async {
+    final row =
+        await (select(exercises)
+              ..where(
+                (row) =>
+                    row.muscleGroup.equals(group) &
+                    row.exerciseName.lower().equals(name.toLowerCase()) &
+                    (excludingId == null
+                        ? const Constant(true)
+                        : row.id.equals(excludingId).not()),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
+  }
+
+  static void _validateExercise(String group, String name) {
+    if (group.isEmpty ||
+        group.length > 40 ||
+        name.isEmpty ||
+        name.length > 120) {
+      throw ArgumentError(
+        'Enter a body part and an exercise name of 1–120 characters.',
+      );
+    }
+  }
+
+  Future<int> deleteExercise(int id) {
+    // Logged sets retain the name and body part recorded at submission time.
+    return (delete(exercises)..where((row) => row.id.equals(id))).go();
+  }
+
+  SimpleSelectStatement<$ExercisesTable, Exercise> _catalogQuery([
+    String? muscleGroup,
+  ]) {
+    final query = select(exercises);
+    if (muscleGroup != null) {
+      query.where((row) => row.muscleGroup.equals(muscleGroup));
+    }
+    return query..orderBy([
+      (row) => OrderingTerm.asc(row.muscleGroup),
+      (row) => OrderingTerm.asc(row.exerciseName),
+    ]);
+  }
+
+  Future<List<Exercise>> exerciseCatalog([String? muscleGroup]) =>
+      _catalogQuery(muscleGroup).get();
+
+  Stream<List<Exercise>> watchExerciseCatalog() => _catalogQuery().watch();
 
   Future<void> saveExerciseSets({
     required String muscleGroup,
@@ -98,7 +187,7 @@ class AppDatabase extends _$AppDatabase {
         for (final indexedSet in sets.indexed)
           ExerciseEntriesCompanion.insert(
             id: '$normalizedName-$date-$submissionId-${indexedSet.$1 + 1}',
-              muscleGroup: Value(muscleGroup),
+            muscleGroup: Value(muscleGroup),
             exerciseName: exerciseName.trim(),
             performedAt: performedAt,
             reps: indexedSet.$2.reps,

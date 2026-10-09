@@ -2,9 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:trackerd_app/app/app_database_scope.dart';
 import 'package:trackerd_app/app/theme.dart';
+import 'package:trackerd_app/data/database/app_database.dart';
 
 class NewExercisePage extends StatefulWidget {
-  const NewExercisePage({super.key});
+  const NewExercisePage({super.key, this.exercise});
+
+  final Exercise? exercise;
 
   @override
   State<NewExercisePage> createState() => _NewExercisePageState();
@@ -26,6 +29,16 @@ class _NewExercisePageState extends State<NewExercisePage> {
   String _muscleGroup = _muscleGroups.first;
   String? _nameError;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final exercise = widget.exercise;
+    if (exercise != null) {
+      _nameController.text = exercise.exerciseName;
+      _muscleGroup = exercise.muscleGroup;
+    }
+  }
 
   @override
   void dispose() {
@@ -50,7 +63,10 @@ class _NewExercisePageState extends State<NewExercisePage> {
             color: AppColors.primary,
           ),
         ),
-        title: const Text('New Exercise', style: TextStyle(fontSize: 16)),
+        title: Text(
+          widget.exercise == null ? 'New Exercise' : 'Edit Exercise',
+          style: const TextStyle(fontSize: 16),
+        ),
         actions: [
           IconButton(
             tooltip: 'Save exercise',
@@ -100,6 +116,7 @@ class _NewExercisePageState extends State<NewExercisePage> {
             const SizedBox(height: 7),
             CupertinoTextField(
               controller: _nameController,
+              maxLength: 120,
               autofocus: true,
               textCapitalization: TextCapitalization.words,
               placeholder: 'e.g. Preacher Curl',
@@ -147,11 +164,36 @@ class _NewExercisePageState extends State<NewExercisePage> {
     }
 
     setState(() => _isSaving = true);
-    await AppDatabaseScope.of(context).addCustomExercise(
-      muscleGroup: _muscleGroup,
-      exerciseName: _nameController.text,
-    );
-    if (mounted) Navigator.of(context).pop();
+    try {
+      final database = AppDatabaseScope.of(context);
+      final exercise = widget.exercise;
+      final saved = exercise == null
+          ? await database.addExercise(
+              muscleGroup: _muscleGroup,
+              exerciseName: _nameController.text,
+            )
+          : await database.updateExercise(
+              id: exercise.id,
+              muscleGroup: _muscleGroup,
+              exerciseName: _nameController.text,
+            );
+      if (!mounted) return;
+      if (saved) {
+        Navigator.of(context).pop();
+      } else {
+        setState(() {
+          _isSaving = false;
+          _nameError =
+              'An exercise with this name already exists for this body part.';
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _nameError = 'Could not save exercise. Please try again.';
+      });
+    }
   }
 
   Future<void> _chooseMuscleGroup() async {

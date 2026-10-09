@@ -441,12 +441,12 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   }
 }
 
-class $CustomExercisesTable extends CustomExercises
-    with TableInfo<$CustomExercisesTable, CustomExercise> {
+class $ExercisesTable extends Exercises
+    with TableInfo<$ExercisesTable, Exercise> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $CustomExercisesTable(this.attachedDatabase, [this._alias]);
+  $ExercisesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -512,10 +512,10 @@ class $CustomExercisesTable extends CustomExercises
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'custom_exercises';
+  static const String $name = 'exercises';
   @override
   VerificationContext validateIntegrity(
-    Insertable<CustomExercise> instance, {
+    Insertable<Exercise> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -563,9 +563,9 @@ class $CustomExercisesTable extends CustomExercises
     {muscleGroup, exerciseName},
   ];
   @override
-  CustomExercise map(Map<String, dynamic> data, {String? tablePrefix}) {
+  Exercise map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return CustomExercise(
+    return Exercise(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -586,17 +586,17 @@ class $CustomExercisesTable extends CustomExercises
   }
 
   @override
-  $CustomExercisesTable createAlias(String alias) {
-    return $CustomExercisesTable(attachedDatabase, alias);
+  $ExercisesTable createAlias(String alias) {
+    return $ExercisesTable(attachedDatabase, alias);
   }
 }
 
-class CustomExercise extends DataClass implements Insertable<CustomExercise> {
+class Exercise extends DataClass implements Insertable<Exercise> {
   final int id;
   final String muscleGroup;
   final String exerciseName;
   final DateTime createdAt;
-  const CustomExercise({
+  const Exercise({
     required this.id,
     required this.muscleGroup,
     required this.exerciseName,
@@ -612,8 +612,8 @@ class CustomExercise extends DataClass implements Insertable<CustomExercise> {
     return map;
   }
 
-  CustomExercisesCompanion toCompanion(bool nullToAbsent) {
-    return CustomExercisesCompanion(
+  ExercisesCompanion toCompanion(bool nullToAbsent) {
+    return ExercisesCompanion(
       id: Value(id),
       muscleGroup: Value(muscleGroup),
       exerciseName: Value(exerciseName),
@@ -621,12 +621,12 @@ class CustomExercise extends DataClass implements Insertable<CustomExercise> {
     );
   }
 
-  factory CustomExercise.fromJson(
+  factory Exercise.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return CustomExercise(
+    return Exercise(
       id: serializer.fromJson<int>(json['id']),
       muscleGroup: serializer.fromJson<String>(json['muscleGroup']),
       exerciseName: serializer.fromJson<String>(json['exerciseName']),
@@ -644,19 +644,19 @@ class CustomExercise extends DataClass implements Insertable<CustomExercise> {
     };
   }
 
-  CustomExercise copyWith({
+  Exercise copyWith({
     int? id,
     String? muscleGroup,
     String? exerciseName,
     DateTime? createdAt,
-  }) => CustomExercise(
+  }) => Exercise(
     id: id ?? this.id,
     muscleGroup: muscleGroup ?? this.muscleGroup,
     exerciseName: exerciseName ?? this.exerciseName,
     createdAt: createdAt ?? this.createdAt,
   );
-  CustomExercise copyWithCompanion(CustomExercisesCompanion data) {
-    return CustomExercise(
+  Exercise copyWithCompanion(ExercisesCompanion data) {
+    return Exercise(
       id: data.id.present ? data.id.value : this.id,
       muscleGroup: data.muscleGroup.present
           ? data.muscleGroup.value
@@ -670,7 +670,7 @@ class CustomExercise extends DataClass implements Insertable<CustomExercise> {
 
   @override
   String toString() {
-    return (StringBuffer('CustomExercise(')
+    return (StringBuffer('Exercise(')
           ..write('id: $id, ')
           ..write('muscleGroup: $muscleGroup, ')
           ..write('exerciseName: $exerciseName, ')
@@ -684,25 +684,25 @@ class CustomExercise extends DataClass implements Insertable<CustomExercise> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is CustomExercise &&
+      (other is Exercise &&
           other.id == this.id &&
           other.muscleGroup == this.muscleGroup &&
           other.exerciseName == this.exerciseName &&
           other.createdAt == this.createdAt);
 }
 
-class CustomExercisesCompanion extends UpdateCompanion<CustomExercise> {
+class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<int> id;
   final Value<String> muscleGroup;
   final Value<String> exerciseName;
   final Value<DateTime> createdAt;
-  const CustomExercisesCompanion({
+  const ExercisesCompanion({
     this.id = const Value.absent(),
     this.muscleGroup = const Value.absent(),
     this.exerciseName = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
-  CustomExercisesCompanion.insert({
+  ExercisesCompanion.insert({
     this.id = const Value.absent(),
     required String muscleGroup,
     required String exerciseName,
@@ -710,7 +710,7 @@ class CustomExercisesCompanion extends UpdateCompanion<CustomExercise> {
   }) : muscleGroup = Value(muscleGroup),
        exerciseName = Value(exerciseName),
        createdAt = Value(createdAt);
-  static Insertable<CustomExercise> custom({
+  static Insertable<Exercise> custom({
     Expression<int>? id,
     Expression<String>? muscleGroup,
     Expression<String>? exerciseName,
@@ -724,13 +724,13 @@ class CustomExercisesCompanion extends UpdateCompanion<CustomExercise> {
     });
   }
 
-  CustomExercisesCompanion copyWith({
+  ExercisesCompanion copyWith({
     Value<int>? id,
     Value<String>? muscleGroup,
     Value<String>? exerciseName,
     Value<DateTime>? createdAt,
   }) {
-    return CustomExercisesCompanion(
+    return ExercisesCompanion(
       id: id ?? this.id,
       muscleGroup: muscleGroup ?? this.muscleGroup,
       exerciseName: exerciseName ?? this.exerciseName,
@@ -758,7 +758,7 @@ class CustomExercisesCompanion extends UpdateCompanion<CustomExercise> {
 
   @override
   String toString() {
-    return (StringBuffer('CustomExercisesCompanion(')
+    return (StringBuffer('ExercisesCompanion(')
           ..write('id: $id, ')
           ..write('muscleGroup: $muscleGroup, ')
           ..write('exerciseName: $exerciseName, ')
@@ -774,16 +774,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExerciseEntriesTable exerciseEntries = $ExerciseEntriesTable(
     this,
   );
-  late final $CustomExercisesTable customExercises = $CustomExercisesTable(
-    this,
-  );
+  late final $ExercisesTable exercises = $ExercisesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     exerciseEntries,
-    customExercises,
+    exercises,
   ];
 }
 
@@ -1016,24 +1014,24 @@ typedef $$ExerciseEntriesTableProcessedTableManager =
       ExerciseEntry,
       PrefetchHooks Function()
     >;
-typedef $$CustomExercisesTableCreateCompanionBuilder =
-    CustomExercisesCompanion Function({
+typedef $$ExercisesTableCreateCompanionBuilder =
+    ExercisesCompanion Function({
       Value<int> id,
       required String muscleGroup,
       required String exerciseName,
       required DateTime createdAt,
     });
-typedef $$CustomExercisesTableUpdateCompanionBuilder =
-    CustomExercisesCompanion Function({
+typedef $$ExercisesTableUpdateCompanionBuilder =
+    ExercisesCompanion Function({
       Value<int> id,
       Value<String> muscleGroup,
       Value<String> exerciseName,
       Value<DateTime> createdAt,
     });
 
-class $$CustomExercisesTableFilterComposer
-    extends Composer<_$AppDatabase, $CustomExercisesTable> {
-  $$CustomExercisesTableFilterComposer({
+class $$ExercisesTableFilterComposer
+    extends Composer<_$AppDatabase, $ExercisesTable> {
+  $$ExercisesTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -1061,9 +1059,9 @@ class $$CustomExercisesTableFilterComposer
   );
 }
 
-class $$CustomExercisesTableOrderingComposer
-    extends Composer<_$AppDatabase, $CustomExercisesTable> {
-  $$CustomExercisesTableOrderingComposer({
+class $$ExercisesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExercisesTable> {
+  $$ExercisesTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -1091,9 +1089,9 @@ class $$CustomExercisesTableOrderingComposer
   );
 }
 
-class $$CustomExercisesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $CustomExercisesTable> {
-  $$CustomExercisesTableAnnotationComposer({
+class $$ExercisesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExercisesTable> {
+  $$ExercisesTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -1117,48 +1115,39 @@ class $$CustomExercisesTableAnnotationComposer
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 }
 
-class $$CustomExercisesTableTableManager
+class $$ExercisesTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $CustomExercisesTable,
-          CustomExercise,
-          $$CustomExercisesTableFilterComposer,
-          $$CustomExercisesTableOrderingComposer,
-          $$CustomExercisesTableAnnotationComposer,
-          $$CustomExercisesTableCreateCompanionBuilder,
-          $$CustomExercisesTableUpdateCompanionBuilder,
-          (
-            CustomExercise,
-            BaseReferences<
-              _$AppDatabase,
-              $CustomExercisesTable,
-              CustomExercise
-            >,
-          ),
-          CustomExercise,
+          $ExercisesTable,
+          Exercise,
+          $$ExercisesTableFilterComposer,
+          $$ExercisesTableOrderingComposer,
+          $$ExercisesTableAnnotationComposer,
+          $$ExercisesTableCreateCompanionBuilder,
+          $$ExercisesTableUpdateCompanionBuilder,
+          (Exercise, BaseReferences<_$AppDatabase, $ExercisesTable, Exercise>),
+          Exercise,
           PrefetchHooks Function()
         > {
-  $$CustomExercisesTableTableManager(
-    _$AppDatabase db,
-    $CustomExercisesTable table,
-  ) : super(
+  $$ExercisesTableTableManager(_$AppDatabase db, $ExercisesTable table)
+    : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$CustomExercisesTableFilterComposer($db: db, $table: table),
+              $$ExercisesTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$CustomExercisesTableOrderingComposer($db: db, $table: table),
+              $$ExercisesTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$CustomExercisesTableAnnotationComposer($db: db, $table: table),
+              $$ExercisesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> muscleGroup = const Value.absent(),
                 Value<String> exerciseName = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
-              }) => CustomExercisesCompanion(
+              }) => ExercisesCompanion(
                 id: id,
                 muscleGroup: muscleGroup,
                 exerciseName: exerciseName,
@@ -1170,7 +1159,7 @@ class $$CustomExercisesTableTableManager
                 required String muscleGroup,
                 required String exerciseName,
                 required DateTime createdAt,
-              }) => CustomExercisesCompanion.insert(
+              }) => ExercisesCompanion.insert(
                 id: id,
                 muscleGroup: muscleGroup,
                 exerciseName: exerciseName,
@@ -1184,21 +1173,18 @@ class $$CustomExercisesTableTableManager
       );
 }
 
-typedef $$CustomExercisesTableProcessedTableManager =
+typedef $$ExercisesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $CustomExercisesTable,
-      CustomExercise,
-      $$CustomExercisesTableFilterComposer,
-      $$CustomExercisesTableOrderingComposer,
-      $$CustomExercisesTableAnnotationComposer,
-      $$CustomExercisesTableCreateCompanionBuilder,
-      $$CustomExercisesTableUpdateCompanionBuilder,
-      (
-        CustomExercise,
-        BaseReferences<_$AppDatabase, $CustomExercisesTable, CustomExercise>,
-      ),
-      CustomExercise,
+      $ExercisesTable,
+      Exercise,
+      $$ExercisesTableFilterComposer,
+      $$ExercisesTableOrderingComposer,
+      $$ExercisesTableAnnotationComposer,
+      $$ExercisesTableCreateCompanionBuilder,
+      $$ExercisesTableUpdateCompanionBuilder,
+      (Exercise, BaseReferences<_$AppDatabase, $ExercisesTable, Exercise>),
+      Exercise,
       PrefetchHooks Function()
     >;
 
@@ -1207,6 +1193,6 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$ExerciseEntriesTableTableManager get exerciseEntries =>
       $$ExerciseEntriesTableTableManager(_db, _db.exerciseEntries);
-  $$CustomExercisesTableTableManager get customExercises =>
-      $$CustomExercisesTableTableManager(_db, _db.customExercises);
+  $$ExercisesTableTableManager get exercises =>
+      $$ExercisesTableTableManager(_db, _db.exercises);
 }

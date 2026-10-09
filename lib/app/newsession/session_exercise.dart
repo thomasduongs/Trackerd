@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:trackerd_app/app/app_database_scope.dart';
 import 'package:trackerd_app/app/theme.dart';
 import 'package:trackerd_app/data/database/app_database.dart';
+import 'exercise_catalog_page.dart';
 
 class SessionExercise extends StatefulWidget {
   const SessionExercise({
@@ -19,40 +20,17 @@ class SessionExercise extends StatefulWidget {
 }
 
 class _SessionExerciseState extends State<SessionExercise> {
-  static const _exerciseOptions = <String, List<String>>{
-    'Biceps': ['Barbell Curl', 'Dumbbell Curl', 'Hammer Curl', 'Cable Curl'],
-    'Triceps': ['Pushdown', 'Skull Crusher', 'Dips', 'Overhead Extension'],
-    'Shoulders': [
-      'Shoulder Press',
-      'Lateral Raise',
-      'Front Raise',
-      'Reverse Fly',
-    ],
-    'Chest': ['Bench Press', 'Incline Press', 'Chest Fly', 'Push-Up'],
-    'Back': ['Deadlift', 'Pull-Up', 'Barbell Row', 'Lat Pulldown'],
-    'Quads': ['Back Squat', 'Front Squat', 'Leg Press', 'Leg Extension'],
-    'Hamstrings': [
-      'Romanian Deadlift',
-      'Leg Curl',
-      'Good Morning',
-      'Hip Hinge',
-    ],
-    'Misc.': ['Custom Exercise', 'Cardio', 'Mobility', 'Core'],
-  };
-
   final _reps = List<int>.filled(4, 0);
   final _weights = List<double>.filled(4, 0);
-  List<String> _customExercises = const [];
+  List<Exercise> _exercises = const [];
+  bool _isLoading = true;
+  bool _loadFailed = false;
+  int _pickerRevision = 0;
   late final List<FixedExtentScrollController> _repsControllers;
   late final List<FixedExtentScrollController> _weightControllers;
   int _selectedExercise = 0;
   bool _isSubmitting = false;
-  bool _loadedCustomExercises = false;
-
-  List<String> get _exercises => {
-    ...(_exerciseOptions[widget.muscleGroup] ?? _exerciseOptions['Misc.']!),
-    ..._customExercises,
-  }.toList();
+  bool _loadedExercises = false;
 
   @override
   void initState() {
@@ -64,16 +42,41 @@ class _SessionExerciseState extends State<SessionExercise> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_loadedCustomExercises) return;
-    _loadedCustomExercises = true;
-    _loadCustomExercises();
+    if (_loadedExercises) return;
+    _loadedExercises = true;
+    _loadExercises();
   }
 
-  Future<void> _loadCustomExercises() async {
-    final exercises = await AppDatabaseScope.of(
-      context,
-    ).customExerciseNames(widget.muscleGroup);
-    if (mounted) setState(() => _customExercises = exercises);
+  Future<void> _loadExercises() async {
+    setState(() {
+      _isLoading = true;
+      _loadFailed = false;
+    });
+    try {
+      final exercises = await AppDatabaseScope.of(
+        context,
+      ).exerciseCatalog(widget.muscleGroup);
+      if (!mounted) return;
+      setState(() {
+        _exercises = exercises;
+        _selectedExercise = 0;
+        _pickerRevision++;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadFailed = true;
+      });
+    }
+  }
+
+  Future<void> _manageExercises() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ExerciseCatalogPage()),
+    );
+    if (mounted) await _loadExercises();
   }
 
   @override
@@ -106,8 +109,16 @@ class _SessionExerciseState extends State<SessionExercise> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Manage exercises',
+            onPressed: _isSubmitting ? null : _manageExercises,
+            icon: const Icon(Icons.edit_note, color: AppColors.primary),
+          ),
+          IconButton(
             tooltip: 'Submit exercise',
-            onPressed: _isSubmitting ? null : _submitExercise,
+            onPressed:
+                _isSubmitting || _isLoading || _loadFailed || _exercises.isEmpty
+                ? null
+                : _submitExercise,
             icon: const Icon(Icons.check, size: 30, color: AppColors.primary),
           ),
         ],
@@ -124,26 +135,45 @@ class _SessionExerciseState extends State<SessionExercise> {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: CupertinoPicker(
-                  itemExtent: 40,
-                  diameterRatio: 1.4,
-                  squeeze: 1,
-                  useMagnifier: true,
-                  magnification: 1.05,
-                  onSelectedItemChanged: (index) {
-                    setState(() => _selectedExercise = index);
-                  },
-                  children: _exercises
-                      .map(
-                        (exercise) => Center(
-                          child: Text(
-                            exercise,
-                            style: const TextStyle(fontSize: 17),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _loadFailed
+                    ? Center(
+                        child: TextButton(
+                          onPressed: _loadExercises,
+                          child: const Text('Could not load exercises. Retry'),
+                        ),
+                      )
+                    : _exercises.isEmpty
+                    ? Center(
+                        child: TextButton(
+                          onPressed: _manageExercises,
+                          child: const Text(
+                            'No exercises for this body part. Add one',
                           ),
                         ),
                       )
-                      .toList(),
-                ),
+                    : CupertinoPicker(
+                        key: ValueKey(_pickerRevision),
+                        itemExtent: 40,
+                        diameterRatio: 1.4,
+                        squeeze: 1,
+                        useMagnifier: true,
+                        magnification: 1.05,
+                        onSelectedItemChanged: (index) {
+                          setState(() => _selectedExercise = index);
+                        },
+                        children: _exercises
+                            .map(
+                              (exercise) => Center(
+                                child: Text(
+                                  exercise.exerciseName,
+                                  style: const TextStyle(fontSize: 17),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
               ),
               const SizedBox(height: 40),
               const Row(
@@ -227,6 +257,9 @@ class _SessionExerciseState extends State<SessionExercise> {
   }
 
   Future<void> _submitExercise() async {
+    if (_isSubmitting || _isLoading || _loadFailed || _exercises.isEmpty) {
+      return;
+    }
     final completedSets = [
       for (var index = 0; index < _reps.length; index++)
         if (_reps[index] > 0)
@@ -244,7 +277,7 @@ class _SessionExerciseState extends State<SessionExercise> {
     try {
       await AppDatabaseScope.of(context).saveExerciseSets(
         muscleGroup: widget.muscleGroup,
-        exerciseName: _exercises[_selectedExercise],
+        exerciseName: _exercises[_selectedExercise].exerciseName,
         performedAt: widget.performedAt,
         sets: completedSets,
       );

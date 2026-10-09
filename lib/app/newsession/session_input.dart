@@ -4,6 +4,7 @@ import 'package:trackerd_app/app/navigation/app_router.dart';
 import 'package:trackerd_app/data/database/app_database.dart';
 
 import '../theme.dart';
+import 'exercise_catalog_page.dart';
 
 class SessionInput extends StatefulWidget {
   SessionInput({super.key, DateTime? sessionDate})
@@ -78,6 +79,15 @@ class _SessionInputState extends State<SessionInput> {
               ),
             ),
             actions: [
+              IconButton(
+                tooltip: 'Manage exercises',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ExerciseCatalogPage(),
+                  ),
+                ),
+                icon: const Icon(Icons.edit_note, color: AppColors.primary),
+              ),
               IconButton(
                 tooltip: 'Add a new exercise type',
                 onPressed: () =>

@@ -103,7 +103,7 @@ void main() {
     expect(find.text('Older Exercise'), findsOneWidget);
     expect(find.text('Yesterday Exercise'), findsNothing);
     expect(
-      find.text('2 sets  •  Reps at max: 8  •  Max weight: 30'),
+      find.text('2 sets  •  Reps at max: 8 \nMax weight: 30 lbs'),
       findsOneWidget,
     );
     expect(find.text('2 Exercises'), findsOneWidget);
@@ -129,7 +129,85 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SessionInput), findsOneWidget);
-    expect(await database.customExerciseNames('Biceps'), ['Preacher Curl']);
+    expect(
+      (await database.exerciseCatalog(
+        'Biceps',
+      )).any((e) => e.exerciseName == 'Preacher Curl'),
+      isTrue,
+    );
+    await _disposeApp(tester);
+  });
+
+  testWidgets('manage exercises edits and deletes an exercise', (tester) async {
+    final database = await _pumpApp(tester);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Manage exercises'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit Back Extensions'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(CupertinoTextField),
+      'Corrected Back Extension',
+    );
+    await tester.tap(find.byTooltip('Save exercise'));
+    await tester.pumpAndSettle();
+    expect(
+      (await database.exerciseCatalog(
+        'Back',
+      )).any((e) => e.exerciseName == 'Corrected Back Extension'),
+      isTrue,
+    );
+    await tester.tap(find.byTooltip('Delete Corrected Back Extension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+    await tester.pumpAndSettle();
+    expect(
+      (await database.exerciseCatalog(
+        'Back',
+      )).any((e) => e.exerciseName == 'Corrected Back Extension'),
+      isFalse,
+    );
+    await _disposeApp(tester);
+  });
+
+  testWidgets('empty exercise group disables submission and supports adding', (
+    tester,
+  ) async {
+    final database = await _pumpApp(tester);
+    for (final exercise in await database.exerciseCatalog('Biceps')) {
+      await database.deleteExercise(exercise.id);
+    }
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Biceps'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('No exercises for this body part. Add one'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.check))
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.text('No exercises for this body part. Add one'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add a new exercise type'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(CupertinoTextField), 'My Curl');
+    await tester.tap(find.byTooltip('Save exercise'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('My Curl'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.check))
+          .onPressed,
+      isNotNull,
+    );
     await _disposeApp(tester);
   });
 
@@ -160,8 +238,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Barbell Curl'), findsOneWidget);
-    expect(find.textContaining('All-time: 6 reps × 50'), findsOneWidget);
-    expect(find.textContaining('Recent: 8 reps × 45'), findsOneWidget);
+    expect(find.textContaining('All-time: 6 x 50 lbs'), findsOneWidget);
+    expect(find.textContaining('Recent: 8 x 45 lbs'), findsOneWidget);
     await _disposeApp(tester);
   });
 
@@ -223,6 +301,8 @@ void main() {
 
     expect(find.byType(SessionInput), findsOneWidget);
     expect(find.text('Sep 6, 2026'), findsWidgets);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
     expect(find.text('Past Curl'), findsOneWidget);
     await _disposeApp(tester);
   });
