@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -180,7 +182,8 @@ class AppDatabase extends _$AppDatabase {
       '-',
     );
     final date = _dateKey(performedAt);
-    final submissionId = performedAt.microsecondsSinceEpoch;
+    final submissionId =
+        '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
 
     await batch((batch) {
       batch.insertAll(exerciseEntries, [
@@ -201,6 +204,23 @@ class AppDatabase extends _$AppDatabase {
     return (select(
       exerciseEntries,
     )..orderBy([(entry) => OrderingTerm.desc(entry.performedAt)])).watch();
+  }
+
+  Stream<List<ExerciseEntry>> watchExerciseHistory({
+    required String muscleGroup,
+    required String exerciseName,
+  }) {
+    return (select(exerciseEntries)
+          ..where(
+            (entry) =>
+                entry.muscleGroup.equals(muscleGroup) &
+                entry.exerciseName.equals(exerciseName),
+          )
+          ..orderBy([
+            (entry) => OrderingTerm.desc(entry.performedAt),
+            (entry) => OrderingTerm.asc(entry.id),
+          ]))
+        .watch();
   }
 
   Future<List<ExerciseEntry>> exercisesForDate(DateTime date) {

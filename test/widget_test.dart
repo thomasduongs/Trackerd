@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trackerd_app/app/app.dart';
+import 'package:trackerd_app/app/exercise_history_page.dart';
 import 'package:trackerd_app/app/newsession/session_exercise.dart';
 import 'package:trackerd_app/app/newsession/session_input.dart';
 import 'package:trackerd_app/data/database/app_database.dart';
@@ -283,6 +284,64 @@ void main() {
     expect(find.text('Barbell Curl'), findsOneWidget);
     expect(find.textContaining('All-time: 6 x 50 lbs'), findsOneWidget);
     expect(find.textContaining('Recent: 8 x 45 lbs'), findsOneWidget);
+    await _disposeApp(tester);
+  });
+
+  testWidgets('stats opens all instances newest first with every set', (
+    tester,
+  ) async {
+    final database = await _pumpApp(tester);
+    for (final record in [
+      (DateTime(2026, 10, 8, 8), const [ExerciseSetInput(reps: 6, weight: 10)]),
+      (DateTime(2026, 10, 9, 8), const [ExerciseSetInput(reps: 8, weight: 15)]),
+      (
+        DateTime(2026, 10, 9, 14),
+        const [
+          ExerciseSetInput(reps: 10, weight: 20.5),
+          ExerciseSetInput(reps: 9, weight: 22.5),
+        ],
+      ),
+    ]) {
+      await database.saveExerciseSets(
+        muscleGroup: 'Biceps',
+        exerciseName: 'History Curl',
+        performedAt: record.$1,
+        sets: record.$2,
+      );
+    }
+    await database.saveExerciseSets(
+      muscleGroup: 'Biceps',
+      exerciseName: 'History Curl',
+      performedAt: DateTime(2026, 10, 9, 14),
+      sets: const [ExerciseSetInput(reps: 12, weight: 25)],
+    );
+    await database.saveExerciseSets(
+      muscleGroup: 'Chest',
+      exerciseName: 'History Curl',
+      performedAt: DateTime(2026, 10, 9, 15),
+      sets: const [ExerciseSetInput(reps: 1, weight: 99)],
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('History Curl').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ExerciseHistoryPage), findsOneWidget);
+    expect(find.text('Biceps · 4 instances'), findsOneWidget);
+    expect(find.text('10 reps × 20.5 lbs'), findsOneWidget);
+    expect(find.text('9 reps × 22.5 lbs'), findsOneWidget);
+    expect(find.text('8 reps × 15 lbs'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('10 reps × 20.5 lbs')).dy,
+      lessThan(tester.getTopLeft(find.text('8 reps × 15 lbs')).dy),
+    );
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.text('6 reps × 10 lbs'), findsOneWidget);
+    expect(find.text('1 reps × 99 lbs'), findsNothing);
+    await tester.tap(find.byTooltip('Back to stats'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Home), findsOneWidget);
     await _disposeApp(tester);
   });
 

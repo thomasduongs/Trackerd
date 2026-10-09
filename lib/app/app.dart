@@ -5,6 +5,7 @@ import 'package:trackerd_app/app/navigation/app_router.dart';
 import 'package:trackerd_app/data/database/app_database.dart';
 import 'theme.dart';
 import 'components.dart';
+import 'exercise_history_page.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -419,6 +420,19 @@ class _ExerciseStatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ExerciseHistoryPage(
+            exerciseName: stat.exerciseName,
+            muscleGroup: stat.muscleGroup,
+          ),
+        ),
+      ),
+      trailing: const Icon(
+        CupertinoIcons.chevron_right,
+        size: 16,
+        color: AppColors.mutedText,
+      ),
       title: Text(stat.exerciseName),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

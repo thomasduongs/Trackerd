@@ -86,6 +86,30 @@ void main() {
       );
     },
   );
+  test('exercise history filters body part and name, newest first', () async {
+    final early = DateTime(2026, 10, 9, 8);
+    final late = DateTime(2026, 10, 9, 14);
+    for (final record in [
+      ('Chest', 'Dip', early, 10.0),
+      ('Chest', 'Dip', late, 20.0),
+      ('Triceps', 'Dip', late, 99.0),
+      ('Chest', 'Chest Fly', late, 88.0),
+    ]) {
+      await database.saveExerciseSets(
+        muscleGroup: record.$1,
+        exerciseName: record.$2,
+        performedAt: record.$3,
+        sets: [ExerciseSetInput(reps: 10, weight: record.$4)],
+      );
+    }
+    final entries = await database
+        .watchExerciseHistory(muscleGroup: 'Chest', exerciseName: 'Dip')
+        .first;
+    expect(entries, hasLength(2));
+    expect(entries.map((e) => e.performedAt), [late, early]);
+    expect(entries.map((e) => e.weightTimesTen), [200, 100]);
+  });
+
   test('seeds the requested catalog with Dip in both body parts', () async {
     final catalog = await database.exerciseCatalog();
     expect(catalog, hasLength(34));
